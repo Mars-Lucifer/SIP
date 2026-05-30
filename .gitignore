@@ -1,0 +1,11 @@
+node_modules
+.next
+package-lock.json
+dist
+storage/*.db
+storage/*.sqlite
+storage/*.db-shm
+storage/*.db-wal
+storage/*.sqlite-shm
+storage/*.sqlite-wal
+public/uploads/products/*

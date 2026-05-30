@@ -1,0 +1,18 @@
+:root {
+  --q-dark: #1f2128;
+  --q-dark-soft: #2d3140;
+  --q-dark-subtle: #383c4d;
+  --q-accent: #d6ff33;
+  --q-accent-soft: #c8f020;
+  --q-muted: #7e8395;
+  --q-surface: #f5f5f5;
+  --q-surface-soft: #ebebeb;
+  --q-danger: #ff3333;
+  --q-danger-soft: #e62020;
+  --q-star: #ffbe33;
+  --q-border: #d6d6db;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+}
