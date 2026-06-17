@@ -3,15 +3,13 @@ import { SQL, and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import {
   CATALOG_SORT_VALUES,
   CatalogSortValue,
-  GRAPHICS_TYPES,
-  GraphicsType,
   POPULAR_PRODUCT_CATEGORIES,
   POPULAR_PRODUCTS_TTL_MS,
   PopularProductCategory,
-  PROCESSOR_TYPES,
-  ProcessorType,
   PRODUCT_CATEGORIES,
+  PRODUCT_TASTES,
   ProductCategory,
+  ProductTaste,
 } from '@/server/constants';
 import {
   brands,
@@ -20,6 +18,7 @@ import {
   orderItems,
   popularProductsCache,
   productImages,
+  productTastes,
   products,
   reviews,
 } from '@/server/db';
@@ -28,7 +27,6 @@ import {
   normalizeForSearch,
   optionalTrimmedString,
   parseOptionalPositiveInteger,
-  parseOptionalPositiveNumber,
   parsePositiveInteger,
   requireNonEmptyString,
 } from '@/server/http';
@@ -39,14 +37,7 @@ interface ProductQuery {
   priceFrom?: number | null;
   priceTo?: number | null;
   brandNames?: string[];
-  screenFrom?: number | null;
-  screenTo?: number | null;
-  processor?: ProcessorType;
-  ramFrom?: number | null;
-  ramTo?: number | null;
-  storageFrom?: number | null;
-  storageTo?: number | null;
-  graphicsType?: GraphicsType;
+  tastes?: ProductTaste[];
   search?: string;
   limit?: number;
 }
@@ -56,26 +47,17 @@ interface ProductPayload {
   category: ProductCategory;
   price: number;
   brandName: string;
-  screenInches: number | null;
-  processor: ProcessorType | null;
-  ramGb: number | null;
-  storageGb: number | null;
-  graphicsType: GraphicsType;
-  graphicsModel: string | null;
+  weightGrams: number | null;
+  tastes: ProductTaste[];
   imageUrls: string[];
 }
 
 type PartialProductPayload = Partial<ProductPayload>;
 
 const PRODUCT_CATEGORY_SET = new Set<string>(PRODUCT_CATEGORIES);
-const PROCESSOR_TYPE_SET = new Set<string>(PROCESSOR_TYPES);
-const GRAPHICS_TYPE_SET = new Set<string>(GRAPHICS_TYPES);
+const PRODUCT_TASTE_SET = new Set<string>(PRODUCT_TASTES);
 const CATALOG_SORT_SET = new Set<string>(CATALOG_SORT_VALUES);
 const POPULAR_CATEGORY_SET = new Set<string>(POPULAR_PRODUCT_CATEGORIES);
-
-function categorySupportsScreen(category: ProductCategory) {
-  return category === 'laptop';
-}
 
 function normalizeBrandName(name: string) {
   return name.trim().replace(/\s+/g, ' ');
@@ -131,20 +113,12 @@ function ensureCategory(value: unknown, fieldName: string): ProductCategory {
   return value as ProductCategory;
 }
 
-function ensureProcessor(value: unknown, fieldName: string): ProcessorType {
-  if (typeof value !== 'string' || !PROCESSOR_TYPE_SET.has(value)) {
+function ensureTaste(value: unknown, fieldName: string): ProductTaste {
+  if (typeof value !== 'string' || !PRODUCT_TASTE_SET.has(value)) {
     throw new HttpError(400, `${fieldName} указан некорректно`);
   }
 
-  return value as ProcessorType;
-}
-
-function ensureGraphicsType(value: unknown, fieldName: string): GraphicsType {
-  if (typeof value !== 'string' || !GRAPHICS_TYPE_SET.has(value)) {
-    throw new HttpError(400, `${fieldName} указан некорректно`);
-  }
-
-  return value as GraphicsType;
+  return value as ProductTaste;
 }
 
 function ensureSort(value: unknown): CatalogSortValue {
@@ -187,6 +161,38 @@ function parseImageUrls(value: unknown, isPartial: boolean) {
   });
 }
 
+function parseTastes(value: unknown, isPartial: boolean) {
+  if (value === undefined) {
+    if (isPartial) {
+      return undefined;
+    }
+
+    throw new HttpError(400, 'Нужно указать хотя бы один вкус');
+  }
+
+  if (!Array.isArray(value)) {
+    throw new HttpError(400, 'Вкусы должны быть списком');
+  }
+
+  const tastes = Array.from(
+    new Set(
+      value.map((item) => {
+        if (typeof item !== 'string') {
+          throw new HttpError(400, 'Каждый вкус должен быть строкой');
+        }
+
+        return ensureTaste(item, 'Вкус');
+      }),
+    ),
+  );
+
+  if (tastes.length === 0) {
+    throw new HttpError(400, 'Нужно указать хотя бы один вкус');
+  }
+
+  return tastes;
+}
+
 function parseProductPayload(input: unknown, isPartial: boolean): PartialProductPayload {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new HttpError(400, 'Тело запроса должно быть объектом');
@@ -217,29 +223,12 @@ function parseProductPayload(input: unknown, isPartial: boolean): PartialProduct
     payload.brandName = normalizeBrandName(requireNonEmptyString(source.brandName, 'Бренд'));
   }
 
-  if (!isPartial || 'screenInches' in source) {
-    payload.screenInches = parseOptionalPositiveNumber(source.screenInches, 'Диагональ');
+  if (!isPartial || 'weightGrams' in source) {
+    payload.weightGrams = parseOptionalPositiveInteger(source.weightGrams, 'Вес');
   }
 
-  if (!isPartial || 'processor' in source) {
-    const processor = optionalTrimmedString(source.processor);
-    payload.processor = processor ? ensureProcessor(processor, 'Процессор') : null;
-  }
-
-  if (!isPartial || 'ramGb' in source) {
-    payload.ramGb = parseOptionalPositiveInteger(source.ramGb, 'ОЗУ');
-  }
-
-  if (!isPartial || 'storageGb' in source) {
-    payload.storageGb = parseOptionalPositiveInteger(source.storageGb, 'Накопитель');
-  }
-
-  if (!isPartial || 'graphicsType' in source) {
-    payload.graphicsType = ensureGraphicsType(source.graphicsType, 'Тип видеокарты');
-  }
-
-  if (!isPartial || 'graphicsModel' in source) {
-    payload.graphicsModel = optionalTrimmedString(source.graphicsModel);
+  if (!isPartial || 'tastes' in source) {
+    payload.tastes = parseTastes(source.tastes, isPartial) ?? [];
   }
 
   const imageUrls = parseImageUrls(source.imageUrls, isPartial);
@@ -250,34 +239,13 @@ function parseProductPayload(input: unknown, isPartial: boolean): PartialProduct
   return payload;
 }
 
-function validateCompleteProduct(payload: ProductPayload) {
-  if (!categorySupportsScreen(payload.category)) {
-    payload.screenInches = null;
-  }
-
-  if (payload.graphicsType === 'discrete' && !payload.graphicsModel) {
-    throw new HttpError(400, 'Для дискретной видеокарты требуется указать ее название');
-  }
-
-  if (payload.graphicsType === 'integrated') {
-    payload.graphicsModel = null;
-  }
-}
-
 function mergeProductState(current: ProductPayload, patch: PartialProductPayload) {
   const merged: ProductPayload = {
     ...current,
     ...patch,
     imageUrls: patch.imageUrls ?? current.imageUrls,
-    graphicsModel:
-      patch.graphicsType === 'integrated'
-        ? null
-        : patch.graphicsModel === undefined
-          ? current.graphicsModel
-          : patch.graphicsModel,
+    tastes: patch.tastes ?? current.tastes,
   };
-
-  validateCompleteProduct(merged);
 
   return merged;
 }
@@ -295,13 +263,43 @@ function getBrandIdByName(name: string) {
     return existingBrand.id;
   }
 
-  const insertResult = db.insert(brands).values({
-    name: normalizeBrandName(name),
-    nameNormalized: normalizedName,
-    createdAt: Date.now(),
-  }).run();
+  const insertResult = db
+    .insert(brands)
+    .values({
+      name: normalizeBrandName(name),
+      nameNormalized: normalizedName,
+      createdAt: Date.now(),
+    })
+    .run();
 
   return Number(insertResult.lastInsertRowid);
+}
+
+function loadProductTastes(productIds: number[]) {
+  if (productIds.length === 0) {
+    return new Map<number, ProductTaste[]>();
+  }
+
+  const rows = db
+    .select({
+      productId: productTastes.productId,
+      taste: productTastes.taste,
+      sortOrder: productTastes.sortOrder,
+    })
+    .from(productTastes)
+    .where(inArray(productTastes.productId, productIds))
+    .orderBy(asc(productTastes.sortOrder), asc(productTastes.id))
+    .all();
+
+  const tastesByProductId = new Map<number, ProductTaste[]>();
+
+  for (const row of rows) {
+    const bucket = tastesByProductId.get(row.productId) ?? [];
+    bucket.push(row.taste);
+    tastesByProductId.set(row.productId, bucket);
+  }
+
+  return tastesByProductId;
 }
 
 function buildWhereConditions(query: ProductQuery) {
@@ -317,38 +315,6 @@ function buildWhereConditions(query: ProductQuery) {
 
   if (query.priceTo !== undefined && query.priceTo !== null) {
     filters.push(sql`${products.price} <= ${query.priceTo}`);
-  }
-
-  if (query.screenFrom !== undefined && query.screenFrom !== null) {
-    filters.push(sql`${products.screenInches} >= ${query.screenFrom}`);
-  }
-
-  if (query.screenTo !== undefined && query.screenTo !== null) {
-    filters.push(sql`${products.screenInches} <= ${query.screenTo}`);
-  }
-
-  if (query.processor) {
-    filters.push(eq(products.processor, query.processor));
-  }
-
-  if (query.ramFrom !== undefined && query.ramFrom !== null) {
-    filters.push(sql`${products.ramGb} >= ${query.ramFrom}`);
-  }
-
-  if (query.ramTo !== undefined && query.ramTo !== null) {
-    filters.push(sql`${products.ramGb} <= ${query.ramTo}`);
-  }
-
-  if (query.storageFrom !== undefined && query.storageFrom !== null) {
-    filters.push(sql`${products.storageGb} >= ${query.storageFrom}`);
-  }
-
-  if (query.storageTo !== undefined && query.storageTo !== null) {
-    filters.push(sql`${products.storageGb} <= ${query.storageTo}`);
-  }
-
-  if (query.graphicsType) {
-    filters.push(eq(products.graphicsType, query.graphicsType));
   }
 
   if (query.search) {
@@ -378,6 +344,20 @@ function buildWhereConditions(query: ProductQuery) {
       } else {
         filters.push(inArray(products.brandId, brandRows.map((brandRow) => brandRow.id)));
       }
+    }
+  }
+
+  if (query.tastes && query.tastes.length > 0) {
+    const tasteRows = db
+      .select({ productId: productTastes.productId })
+      .from(productTastes)
+      .where(inArray(productTastes.taste, query.tastes))
+      .all();
+
+    if (tasteRows.length === 0) {
+      filters.push(sql`1 = 0`);
+    } else {
+      filters.push(inArray(products.id, tasteRows.map((row) => row.productId)));
     }
   }
 
@@ -518,7 +498,6 @@ export function listBrands() {
 export function listProducts(query: ProductQuery = {}) {
   const { imageExpression, ratingExpression, reviewCountExpression, orderCountExpression } =
     productSelectFields();
-
   const whereClause = buildWhereConditions(query);
   const sort = query.sort ?? 'popular';
 
@@ -530,12 +509,7 @@ export function listProducts(query: ProductQuery = {}) {
       category: products.category,
       brandId: brands.id,
       brandName: brands.name,
-      screenInches: products.screenInches,
-      processor: products.processor,
-      ramGb: products.ramGb,
-      storageGb: products.storageGb,
-      graphicsType: products.graphicsType,
-      graphicsModel: products.graphicsModel,
+      weightGrams: products.weightGrams,
       image: imageExpression.as('image'),
       rating: ratingExpression.as('rating'),
       reviewCount: reviewCountExpression.as('reviewCount'),
@@ -544,32 +518,28 @@ export function listProducts(query: ProductQuery = {}) {
     .from(products)
     .innerJoin(brands, eq(brands.id, products.brandId));
 
-  const filteredProductQuery = whereClause
-    ? baseProductQuery.where(whereClause)
-    : baseProductQuery;
+  const filteredProductQuery = whereClause ? baseProductQuery.where(whereClause) : baseProductQuery;
 
   const orderedProductQuery = filteredProductQuery.orderBy(
     ...orderProductQuery(sort, ratingExpression, reviewCountExpression, orderCountExpression),
   );
 
   const finalProductQuery =
-    query.limit !== undefined
-      ? orderedProductQuery.limit(query.limit)
-      : orderedProductQuery;
+    query.limit !== undefined ? orderedProductQuery.limit(query.limit) : orderedProductQuery;
 
-  const baseCountQuery = db
-    .select({
-      count: sql<number>`count(*)`,
-    })
-    .from(products);
-
+  const baseCountQuery = db.select({ count: sql<number>`count(*)` }).from(products);
   const finalCountQuery = whereClause ? baseCountQuery.where(whereClause) : baseCountQuery;
 
   const countRow = finalCountQuery.get();
+  const items = finalProductQuery.all();
+  const tastesByProductId = loadProductTastes(items.map((item) => item.id));
 
   return {
     total: countRow?.count ?? 0,
-    items: finalProductQuery.all(),
+    items: items.map((item) => ({
+      ...item,
+      tastes: tastesByProductId.get(item.id) ?? [],
+    })),
   };
 }
 
@@ -585,12 +555,7 @@ export function getProductById(productId: number) {
       category: products.category,
       brandId: brands.id,
       brandName: brands.name,
-      screenInches: products.screenInches,
-      processor: products.processor,
-      ramGb: products.ramGb,
-      storageGb: products.storageGb,
-      graphicsType: products.graphicsType,
-      graphicsModel: products.graphicsModel,
+      weightGrams: products.weightGrams,
       createdAt: products.createdAt,
       updatedAt: products.updatedAt,
       image: imageExpression.as('image'),
@@ -618,8 +583,20 @@ export function getProductById(productId: number) {
     .orderBy(asc(productImages.sortOrder), asc(productImages.id))
     .all();
 
+  const tastes = db
+    .select({
+      taste: productTastes.taste,
+      sortOrder: productTastes.sortOrder,
+    })
+    .from(productTastes)
+    .where(eq(productTastes.productId, productId))
+    .orderBy(asc(productTastes.sortOrder), asc(productTastes.id))
+    .all()
+    .map((row) => row.taste);
+
   return {
     ...item,
+    tastes,
     images: images.map((image) => image.url),
   };
 }
@@ -632,12 +609,7 @@ function getProductStateById(productId: number) {
       category: products.category,
       price: products.price,
       brandName: brands.name,
-      screenInches: products.screenInches,
-      processor: products.processor,
-      ramGb: products.ramGb,
-      storageGb: products.storageGb,
-      graphicsType: products.graphicsType,
-      graphicsModel: products.graphicsModel,
+      weightGrams: products.weightGrams,
     })
     .from(products)
     .innerJoin(brands, eq(brands.id, products.brandId))
@@ -656,55 +628,70 @@ function getProductStateById(productId: number) {
     .all()
     .map((image) => image.url);
 
+  const tastes = db
+    .select({ taste: productTastes.taste })
+    .from(productTastes)
+    .where(eq(productTastes.productId, productId))
+    .orderBy(asc(productTastes.sortOrder), asc(productTastes.id))
+    .all()
+    .map((row) => row.taste);
+
   return {
     name: productRow.name,
     category: productRow.category,
     price: productRow.price,
     brandName: productRow.brandName,
-    screenInches: productRow.screenInches,
-    processor: productRow.processor,
-    ramGb: productRow.ramGb,
-    storageGb: productRow.storageGb,
-    graphicsType: productRow.graphicsType,
-    graphicsModel: productRow.graphicsModel,
+    weightGrams: productRow.weightGrams,
+    tastes,
     imageUrls: images,
   } satisfies ProductPayload;
 }
 
 export function createProduct(input: unknown) {
   const payload = parseProductPayload(input, false) as ProductPayload;
-  validateCompleteProduct(payload);
-
   const now = Date.now();
   const brandId = getBrandIdByName(payload.brandName);
 
-  const insertResult = db.insert(products).values({
-    name: payload.name,
-    nameSearch: normalizeForSearch(payload.name),
-    category: payload.category,
-    price: payload.price,
-    brandId,
-    screenInches: payload.screenInches,
-    processor: payload.processor,
-    ramGb: payload.ramGb,
-    storageGb: payload.storageGb,
-    graphicsType: payload.graphicsType,
-    graphicsModel: payload.graphicsType === 'discrete' ? payload.graphicsModel : null,
-    createdAt: now,
-    updatedAt: now,
-  }).run();
+  const insertResult = db
+    .insert(products)
+    .values({
+      name: payload.name,
+      nameSearch: normalizeForSearch(payload.name),
+      category: payload.category,
+      price: payload.price,
+      brandId,
+      weightGrams: payload.weightGrams,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .run();
 
   const productId = Number(insertResult.lastInsertRowid);
 
+  if (payload.tastes.length > 0) {
+    db.insert(productTastes)
+      .values(
+        payload.tastes.map((taste, index) => ({
+          productId,
+          taste,
+          sortOrder: index,
+          createdAt: now,
+        })),
+      )
+      .run();
+  }
+
   if (payload.imageUrls.length > 0) {
-    db.insert(productImages).values(
-      payload.imageUrls.map((url, index) => ({
-        productId,
-        url,
-        sortOrder: index,
-        createdAt: now,
-      })),
-    ).run();
+    db.insert(productImages)
+      .values(
+        payload.imageUrls.map((url, index) => ({
+          productId,
+          url,
+          sortOrder: index,
+          createdAt: now,
+        })),
+      )
+      .run();
   }
 
   invalidatePopularProductsCache();
@@ -723,33 +710,50 @@ export function updateProduct(productId: number, input: unknown) {
   const nextState = mergeProductState(currentProduct, patch);
   const brandId = getBrandIdByName(nextState.brandName);
 
-  db.update(products).set({
-    name: nextState.name,
-    nameSearch: normalizeForSearch(nextState.name),
-    category: nextState.category,
-    price: nextState.price,
-    brandId,
-    screenInches: nextState.screenInches,
-    processor: nextState.processor,
-    ramGb: nextState.ramGb,
-    storageGb: nextState.storageGb,
-    graphicsType: nextState.graphicsType,
-    graphicsModel: nextState.graphicsType === 'discrete' ? nextState.graphicsModel : null,
-    updatedAt: Date.now(),
-  }).where(eq(products.id, productId)).run();
+  db.update(products)
+    .set({
+      name: nextState.name,
+      nameSearch: normalizeForSearch(nextState.name),
+      category: nextState.category,
+      price: nextState.price,
+      brandId,
+      weightGrams: nextState.weightGrams,
+      updatedAt: Date.now(),
+    })
+    .where(eq(products.id, productId))
+    .run();
+
+  if (patch.tastes !== undefined) {
+    db.delete(productTastes).where(eq(productTastes.productId, productId)).run();
+
+    if (patch.tastes.length > 0) {
+      db.insert(productTastes)
+        .values(
+          patch.tastes.map((taste, index) => ({
+            productId,
+            taste,
+            sortOrder: index,
+            createdAt: Date.now(),
+          })),
+        )
+        .run();
+    }
+  }
 
   if (patch.imageUrls !== undefined) {
     db.delete(productImages).where(eq(productImages.productId, productId)).run();
 
     if (patch.imageUrls.length > 0) {
-      db.insert(productImages).values(
-        patch.imageUrls.map((url, index) => ({
-          productId,
-          url,
-          sortOrder: index,
-          createdAt: Date.now(),
-        })),
-      ).run();
+      db.insert(productImages)
+        .values(
+          patch.imageUrls.map((url, index) => ({
+            productId,
+            url,
+            sortOrder: index,
+            createdAt: Date.now(),
+          })),
+        )
+        .run();
     }
   }
 
@@ -778,28 +782,11 @@ export function invalidatePopularProductsCache() {
 }
 
 function queryPopularCandidates(popularCategory: PopularProductCategory) {
-  switch (popularCategory) {
-    case 'work_laptops':
-      return listProducts({
-        category: 'laptop',
-        graphicsType: 'integrated',
-        sort: 'popular',
-        limit: 12,
-      }).items;
-    case 'gaming_laptops':
-      return listProducts({
-        category: 'laptop',
-        graphicsType: 'discrete',
-        sort: 'popular',
-        limit: 12,
-      }).items;
-    case 'mini_pc':
-      return listProducts({
-        category: 'mini_pc',
-        sort: 'popular',
-        limit: 12,
-      }).items;
-  }
+  return listProducts({
+    category: popularCategory,
+    sort: 'popular',
+    limit: 12,
+  }).items;
 }
 
 export function rebuildPopularProductsCache(force = false) {
@@ -887,33 +874,20 @@ export function getPopularProducts(popularCategory: PopularProductCategory) {
 export function parseProductFilters(searchParams: URLSearchParams): ProductQuery {
   const category = searchParams.get('category');
   const sort = searchParams.get('sort');
-  const processor = searchParams.get('processor');
-  const graphicsType = searchParams.get('graphicsType');
   const search = searchParams.get('search');
   const brandNames = searchParams.getAll('brand');
-  const parsedCategory = category ? ensureCategory(category, 'Категория') : undefined;
-  const allowScreenFilters = !parsedCategory || categorySupportsScreen(parsedCategory);
+  const tastes = searchParams.getAll('taste');
 
   return {
-    category: parsedCategory,
+    category: category ? ensureCategory(category, 'Категория') : undefined,
     sort: sort ? ensureSort(sort) : 'popular',
     priceFrom: parseOptionalPositiveInteger(searchParams.get('priceFrom'), 'Цена от') ?? undefined,
     priceTo: parseOptionalPositiveInteger(searchParams.get('priceTo'), 'Цена до') ?? undefined,
     brandNames,
-    screenFrom: allowScreenFilters
-      ? parseOptionalPositiveNumber(searchParams.get('screenFrom'), 'Диагональ от') ?? undefined
-      : undefined,
-    screenTo: allowScreenFilters
-      ? parseOptionalPositiveNumber(searchParams.get('screenTo'), 'Диагональ до') ?? undefined
-      : undefined,
-    processor: processor ? ensureProcessor(processor, 'Процессор') : undefined,
-    ramFrom: parseOptionalPositiveInteger(searchParams.get('ramFrom'), 'ОЗУ от') ?? undefined,
-    ramTo: parseOptionalPositiveInteger(searchParams.get('ramTo'), 'ОЗУ до') ?? undefined,
-    storageFrom:
-      parseOptionalPositiveInteger(searchParams.get('storageFrom'), 'Память от') ?? undefined,
-    storageTo:
-      parseOptionalPositiveInteger(searchParams.get('storageTo'), 'Память до') ?? undefined,
-    graphicsType: graphicsType ? ensureGraphicsType(graphicsType, 'Видеокарта') : undefined,
+    tastes:
+      tastes.length > 0
+        ? Array.from(new Set(tastes.map((taste) => ensureTaste(taste, 'Вкус'))))
+        : undefined,
     search: search ? normalizeForSearch(search) : undefined,
   };
 }

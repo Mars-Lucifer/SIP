@@ -1,36 +1,28 @@
-"use client";
+'use client';
 
-import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import { SlidersHorizontal, X } from "lucide-react";
+import { useEffect, useState, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import { SlidersHorizontal, X } from 'lucide-react';
 
-import { useAuth } from "@/app/auth-provider";
-import { Button } from "@/app/components/Button";
-import { Footer } from "@/app/components/Footer";
-import { Header } from "@/app/components/Header";
-import { InputField, InputSearch } from "@/app/components/Input";
-import { ProductCard } from "@/app/components/ProductCard";
-import {
-  apiRequest,
-  catalogLabelToCategory,
-  labelToGraphicsType,
-  labelToProcessor,
-  type ProductListItem,
-} from "@/app/lib/api";
+import { useAuth } from '@/app/auth-provider';
+import { Button } from '@/app/components/Button';
+import { Footer } from '@/app/components/Footer';
+import { Header } from '@/app/components/Header';
+import { InputField, InputSearch } from '@/app/components/Input';
+import { ProductCard } from '@/app/components/ProductCard';
+import { apiRequest, catalogLabelToCategory, type ProductListItem } from '@/app/lib/api';
 
-const CATEGORIES = ["Все", "Ноутбуки", "Мини ПК"] as const;
+const CATEGORIES = ['Все', 'Чаи', 'Сиропы', 'Додавки', 'Drink Kits'] as const;
 const SORT_OPTIONS = [
-  { value: "popular", label: "По популярности" },
-  { value: "rating", label: "По рейтингу" },
-  { value: "price_asc", label: "(Цена) По возрастанию" },
-  { value: "price_desc", label: "(Цена) По убыванию" },
+  { value: 'popular', label: 'По популярности' },
+  { value: 'rating', label: 'По рейтингу' },
+  { value: 'price_asc', label: '(Цена) По возрастанию' },
+  { value: 'price_desc', label: '(Цена) По убыванию' },
 ] as const;
-const GPU_TYPES = ["Встроенная", "Дискретная"] as const;
-const PROCESSOR_OPTIONS = ["Intel", "AMD", "Arm", "Apple"] as const;
+const TASTES = ['травяной', 'цитрусовый', 'ягодный', 'экзотический', 'слайдий'] as const;
 
 type CategoryKey = (typeof CATEGORIES)[number];
-type SortKey = (typeof SORT_OPTIONS)[number]["value"];
-type GpuType = (typeof GPU_TYPES)[number];
+type SortKey = (typeof SORT_OPTIONS)[number]['value'];
 
 interface FilterState {
   category: CategoryKey;
@@ -38,56 +30,26 @@ interface FilterState {
   priceFrom: string;
   priceTo: string;
   brands: string[];
-  screenFrom: string;
-  screenTo: string;
-  processor: string;
-  ramFrom: string;
-  ramTo: string;
-  storageFrom: string;
-  storageTo: string;
-  gpu: "" | GpuType;
+  tastes: string[];
 }
 
 const INITIAL_FILTERS: FilterState = {
-  category: "Все",
-  sort: "popular",
-  priceFrom: "",
-  priceTo: "",
+  category: 'Все',
+  sort: 'popular',
+  priceFrom: '',
+  priceTo: '',
   brands: [],
-  screenFrom: "",
-  screenTo: "",
-  processor: "",
-  ramFrom: "",
-  ramTo: "",
-  storageFrom: "",
-  storageTo: "",
-  gpu: "",
+  tastes: [],
 };
 
-const RANGE_KEYS = [
-  "priceFrom",
-  "priceTo",
-  "screenFrom",
-  "screenTo",
-  "ramFrom",
-  "ramTo",
-  "storageFrom",
-  "storageTo",
-] as const;
-
+const RANGE_KEYS = ['priceFrom', 'priceTo'] as const;
 type RangeKey = (typeof RANGE_KEYS)[number];
 
 function sanitizeDigits(value: string): string {
-  return value.replace(/[^\d.]/g, "");
+  return value.replace(/[^\d.]/g, '');
 }
 
-function FilterSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
+function FilterSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-3">
       <h3 className="text-q-dark text-sm font-semibold">{title}</h3>
@@ -112,10 +74,7 @@ function RadioGroup({
       {options.map((option) => {
         const checked = value === option;
         return (
-          <label
-            key={option}
-            className="inline-flex items-center gap-2 cursor-pointer group"
-          >
+          <label key={option} className="inline-flex items-center gap-2 cursor-pointer group">
             <input
               type="radio"
               name={name}
@@ -126,22 +85,13 @@ function RadioGroup({
             />
             <span
               className={[
-                "size-[18px] rounded-full bg-q-surface border flex items-center justify-center transition-all",
-                checked
-                  ? "border-q-dark"
-                  : "border-q-border group-hover:border-q-muted",
-              ].join(" ")}
+                'size-[18px] rounded-full bg-q-surface border flex items-center justify-center transition-all',
+                checked ? 'border-q-dark' : 'border-q-border group-hover:border-q-muted',
+              ].join(' ')}
             >
-              {checked && (
-                <span className="size-[8px] rounded-full bg-q-dark" />
-              )}
+              {checked && <span className="size-[8px] rounded-full bg-q-dark" />}
             </span>
-            <span
-              className={[
-                "text-base transition-colors",
-                checked ? "text-q-dark" : "text-q-muted",
-              ].join(" ")}
-            >
+            <span className={['text-base transition-colors', checked ? 'text-q-dark' : 'text-q-muted'].join(' ')}>
               {option}
             </span>
           </label>
@@ -165,32 +115,19 @@ function CheckboxGroup({
       {options.map((option) => {
         const checked = values.includes(option);
         return (
-          <label
-            key={option}
-            className="inline-flex items-center gap-2 cursor-pointer group"
-          >
-            <input
-              type="checkbox"
-              checked={checked}
-              onChange={() => onToggle(option)}
-              className="sr-only"
-            />
+          <label key={option} className="inline-flex items-center gap-2 cursor-pointer group">
+            <input type="checkbox" checked={checked} onChange={() => onToggle(option)} className="sr-only" />
             <span
               className={[
-                "size-[18px] rounded-[6px] border flex items-center justify-center transition-all",
+                'size-[18px] rounded-[6px] border flex items-center justify-center transition-all',
                 checked
-                  ? "bg-q-dark border-q-dark"
-                  : "bg-q-surface border-q-border group-hover:border-q-muted",
-              ].join(" ")}
+                  ? 'bg-q-dark border-q-dark'
+                  : 'bg-q-surface border-q-border group-hover:border-q-muted',
+              ].join(' ')}
             >
-              {checked && <img src="/assets/icons/check.svg" alt="chech" />}
+              {checked && <img src="/assets/icons/check.svg" alt="check" />}
             </span>
-            <span
-              className={[
-                "text-base transition-colors",
-                checked ? "text-q-dark" : "text-q-muted",
-              ].join(" ")}
-            >
+            <span className={['text-base transition-colors', checked ? 'text-q-dark' : 'text-q-muted'].join(' ')}>
               {option}
             </span>
           </label>
@@ -231,7 +168,7 @@ function RangeInputs({
         onChange={(e) => onFromChange(sanitizeDigits(e.target.value))}
         onBlur={(e) => onFromCommit(sanitizeDigits(e.target.value))}
         onKeyDown={(e) => {
-          if (e.key === "Enter") {
+          if (e.key === 'Enter') {
             e.preventDefault();
             onFromCommit(sanitizeDigits(e.currentTarget.value));
           }
@@ -250,7 +187,7 @@ function RangeInputs({
         onChange={(e) => onToChange(sanitizeDigits(e.target.value))}
         onBlur={(e) => onToCommit(sanitizeDigits(e.target.value))}
         onKeyDown={(e) => {
-          if (e.key === "Enter") {
+          if (e.key === 'Enter') {
             e.preventDefault();
             onToCommit(sanitizeDigits(e.currentTarget.value));
           }
@@ -267,22 +204,20 @@ export default function CatalogPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
-  const [draftFilters, setDraftFilters] =
-    useState<FilterState>(INITIAL_FILTERS);
+  const [draftFilters, setDraftFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const supportsScreenFilter = filters.category !== "Мини ПК";
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
 
-    apiRequest<{ items: Array<{ id: number; name: string }> }>("/api/brands")
+    apiRequest<{ items: Array<{ id: number; name: string }> }>('/api/brands')
       .then((response) => {
         if (!cancelled) {
           setBrands(response.items.map((item) => item.name));
@@ -305,44 +240,31 @@ export default function CatalogPage() {
 
     const category = catalogLabelToCategory(filters.category);
     if (category) {
-      params.set("category", category);
+      params.set('category', category);
     }
 
-    params.set("sort", filters.sort);
+    params.set('sort', filters.sort);
 
-    if (filters.priceFrom) params.set("priceFrom", filters.priceFrom);
-    if (filters.priceTo) params.set("priceTo", filters.priceTo);
-    if (supportsScreenFilter && filters.screenFrom) params.set("screenFrom", filters.screenFrom);
-    if (supportsScreenFilter && filters.screenTo) params.set("screenTo", filters.screenTo);
-    if (filters.ramFrom) params.set("ramFrom", filters.ramFrom);
-    if (filters.ramTo) params.set("ramTo", filters.ramTo);
-    if (filters.storageFrom) params.set("storageFrom", filters.storageFrom);
-    if (filters.storageTo) params.set("storageTo", filters.storageTo);
-    if (filters.processor) {
-      const processor = labelToProcessor(filters.processor);
-      if (processor) params.set("processor", processor);
-    }
-    if (filters.gpu) {
-      const graphicsType = labelToGraphicsType(filters.gpu);
-      if (graphicsType) params.set("graphicsType", graphicsType);
-    }
+    if (filters.priceFrom) params.set('priceFrom', filters.priceFrom);
+    if (filters.priceTo) params.set('priceTo', filters.priceTo);
     for (const brand of filters.brands) {
-      params.append("brand", brand);
+      params.append('brand', brand);
+    }
+    for (const taste of filters.tastes) {
+      params.append('taste', taste);
     }
     if (search) {
-      params.set("search", search.trim().toLowerCase());
+      params.set('search', search.trim().toLowerCase());
     }
 
     setIsLoading(true);
 
-    apiRequest<{ total: number; items: ProductListItem[] }>(
-      `/api/products?${params.toString()}`,
-    )
+    apiRequest<{ total: number; items: ProductListItem[] }>(`/api/products?${params.toString()}`)
       .then((response) => {
         if (!cancelled) {
           setProducts(response.items);
           setTotal(response.total);
-          setError("");
+          setError('');
         }
       })
       .catch((requestError: Error) => {
@@ -361,12 +283,9 @@ export default function CatalogPage() {
     return () => {
       cancelled = true;
     };
-  }, [filters, search, supportsScreenFilter]);
+  }, [filters, search]);
 
-  const updateInstantFilter = <K extends keyof FilterState>(
-    key: K,
-    value: FilterState[K],
-  ) => {
+  const updateInstantFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setDraftFilters((prev) => ({ ...prev, [key]: value }));
   };
@@ -389,40 +308,45 @@ export default function CatalogPage() {
     const nextBrands = filters.brands.includes(brand)
       ? filters.brands.filter((item) => item !== brand)
       : [...filters.brands, brand];
-    updateInstantFilter("brands", nextBrands);
+    updateInstantFilter('brands', nextBrands);
+  };
+
+  const toggleTaste = (taste: string) => {
+    const nextTastes = filters.tastes.includes(taste)
+      ? filters.tastes.filter((item) => item !== taste)
+      : [...filters.tastes, taste];
+    updateInstantFilter('tastes', nextTastes);
   };
 
   const clearFilters = () => {
     setFilters(INITIAL_FILTERS);
     setDraftFilters(INITIAL_FILTERS);
-    setSearchInput("");
-    setSearch("");
+    setSearchInput('');
+    setSearch('');
   };
 
   const handleAddToCart = async (productId: number) => {
     if (!user) {
-      router.push("/auth");
+      router.push('/auth');
       return;
     }
 
     try {
-      await apiRequest("/api/cart/items", {
-        method: "POST",
+      await apiRequest('/api/cart/items', {
+        method: 'POST',
         body: JSON.stringify({ productId }),
       });
-      window.alert("Товар добавлен в корзину");
+      window.alert('Товар добавлен в корзину');
     } catch (requestError) {
-      const message =
-        requestError instanceof Error
-          ? requestError.message
-          : "Не удалось добавить товар";
+      const message = requestError instanceof Error ? requestError.message : 'Не удалось добавить товар';
       window.alert(message);
     }
   };
 
-  const sortLabelMap = Object.fromEntries(
-    SORT_OPTIONS.map((item) => [item.value, item.label]),
-  ) as Record<SortKey, string>;
+  const sortLabelMap = Object.fromEntries(SORT_OPTIONS.map((item) => [item.value, item.label])) as Record<
+    SortKey,
+    string
+  >;
 
   const renderFilterPanel = () => (
     <div className="bg-q-surface rounded-q-card p-5 flex flex-col gap-6">
@@ -440,21 +364,7 @@ export default function CatalogPage() {
           name="category-filter"
           options={CATEGORIES}
           value={filters.category}
-          onChange={(value) => {
-            const nextCategory = value as CategoryKey;
-            setFilters((prev) => ({
-              ...prev,
-              category: nextCategory,
-              screenFrom: nextCategory === "Мини ПК" ? "" : prev.screenFrom,
-              screenTo: nextCategory === "Мини ПК" ? "" : prev.screenTo,
-            }));
-            setDraftFilters((prev) => ({
-              ...prev,
-              category: nextCategory,
-              screenFrom: nextCategory === "Мини ПК" ? "" : prev.screenFrom,
-              screenTo: nextCategory === "Мини ПК" ? "" : prev.screenTo,
-            }));
-          }}
+          onChange={(value) => updateInstantFilter('category', value as CategoryKey)}
         />
       </FilterSection>
 
@@ -466,7 +376,7 @@ export default function CatalogPage() {
           onChange={(label) => {
             const selected = SORT_OPTIONS.find((item) => item.label === label);
             if (selected) {
-              updateInstantFilter("sort", selected.value);
+              updateInstantFilter('sort', selected.value);
             }
           }}
         />
@@ -478,85 +388,19 @@ export default function CatalogPage() {
           toPlaceholder="До ₽"
           fromValue={draftFilters.priceFrom}
           toValue={draftFilters.priceTo}
-          onFromChange={(value) => updateDraftRange("priceFrom", value)}
-          onToChange={(value) => updateDraftRange("priceTo", value)}
-          onFromCommit={(value) => commitRangeField("priceFrom", value)}
-          onToCommit={(value) => commitRangeField("priceTo", value)}
+          onFromChange={(value) => updateDraftRange('priceFrom', value)}
+          onToChange={(value) => updateDraftRange('priceTo', value)}
+          onFromCommit={(value) => commitRangeField('priceFrom', value)}
+          onToCommit={(value) => commitRangeField('priceTo', value)}
         />
       </FilterSection>
 
       <FilterSection title="Бренд">
-        <CheckboxGroup
-          options={brands}
-          values={filters.brands}
-          onToggle={toggleBrand}
-        />
+        <CheckboxGroup options={brands} values={filters.brands} onToggle={toggleBrand} />
       </FilterSection>
 
-      {supportsScreenFilter && (
-        <FilterSection title="Диагональ экрана">
-          <RangeInputs
-            fromPlaceholder='От "'
-            toPlaceholder='До "'
-            fromValue={draftFilters.screenFrom}
-            toValue={draftFilters.screenTo}
-            onFromChange={(value) => updateDraftRange("screenFrom", value)}
-            onToChange={(value) => updateDraftRange("screenTo", value)}
-            onFromCommit={(value) => commitRangeField("screenFrom", value)}
-            onToCommit={(value) => commitRangeField("screenTo", value)}
-          />
-        </FilterSection>
-      )}
-
-      <FilterSection title="Процессор">
-        <RadioGroup
-          name="processor-filter"
-          options={["Любой", ...PROCESSOR_OPTIONS]}
-          value={filters.processor || "Любой"}
-          onChange={(value) =>
-            updateInstantFilter("processor", value === "Любой" ? "" : value)
-          }
-        />
-      </FilterSection>
-
-      <FilterSection title="ОЗУ">
-        <RangeInputs
-          fromPlaceholder="От Гб"
-          toPlaceholder="До Гб"
-          fromValue={draftFilters.ramFrom}
-          toValue={draftFilters.ramTo}
-          onFromChange={(value) => updateDraftRange("ramFrom", value)}
-          onToChange={(value) => updateDraftRange("ramTo", value)}
-          onFromCommit={(value) => commitRangeField("ramFrom", value)}
-          onToCommit={(value) => commitRangeField("ramTo", value)}
-        />
-      </FilterSection>
-
-      <FilterSection title="Накопитель">
-        <RangeInputs
-          fromPlaceholder="От Гб"
-          toPlaceholder="До Гб"
-          fromValue={draftFilters.storageFrom}
-          toValue={draftFilters.storageTo}
-          onFromChange={(value) => updateDraftRange("storageFrom", value)}
-          onToChange={(value) => updateDraftRange("storageTo", value)}
-          onFromCommit={(value) => commitRangeField("storageFrom", value)}
-          onToCommit={(value) => commitRangeField("storageTo", value)}
-        />
-      </FilterSection>
-
-      <FilterSection title="Видеокарта">
-        <RadioGroup
-          name="gpu-filter"
-          options={["Любая", ...GPU_TYPES]}
-          value={filters.gpu || "Любая"}
-          onChange={(value) =>
-            updateInstantFilter(
-              "gpu",
-              (value === "Любая" ? "" : value) as FilterState["gpu"],
-            )
-          }
-        />
+      <FilterSection title="Вкус">
+        <CheckboxGroup options={TASTES as unknown as string[]} values={filters.tastes} onToggle={toggleTaste} />
       </FilterSection>
     </div>
   );
@@ -568,11 +412,9 @@ export default function CatalogPage() {
       <main className="px-4 sm:px-6 xl:px-[60px] max-w-[1440px] mx-auto py-8 sm:py-10">
         <div className="lg:hidden mb-4 flex items-center justify-between gap-3">
           <Button
-            variant={filtersOpen ? "dark" : "outlineMuted"}
+            variant={filtersOpen ? 'dark' : 'outlineMuted'}
             size="md"
-            icon={
-              filtersOpen ? <X size={18} /> : <SlidersHorizontal size={18} />
-            }
+            icon={filtersOpen ? <X size={18} /> : <SlidersHorizontal size={18} />}
             iconPosition="right"
             onClick={() => setFiltersOpen((prev) => !prev)}
           >
@@ -584,26 +426,15 @@ export default function CatalogPage() {
         </div>
 
         <div className="flex gap-8 xl:gap-10 items-start">
-          <aside className="shrink-0 w-[220px] xl:w-[240px] hidden lg:block">
-            {renderFilterPanel()}
-          </aside>
+          <aside className="shrink-0 w-[220px] xl:w-[240px] hidden lg:block">{renderFilterPanel()}</aside>
 
           {filtersOpen && (
             <div className="lg:hidden fixed inset-0 z-40 flex">
-              <button
-                type="button"
-                className="flex-1 bg-black/40"
-                onClick={() => setFiltersOpen(false)}
-                aria-label="Закрыть фильтры"
-              />
+              <button type="button" className="flex-1 bg-black/40" onClick={() => setFiltersOpen(false)} aria-label="Закрыть фильтры" />
               <div className="w-72 bg-white h-full overflow-y-auto p-4">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-medium text-q-dark">Фильтры</h2>
-                  <button
-                    type="button"
-                    onClick={() => setFiltersOpen(false)}
-                    aria-label="Закрыть"
-                  >
+                  <button type="button" onClick={() => setFiltersOpen(false)} aria-label="Закрыть">
                     <X size={20} className="text-q-muted" />
                   </button>
                 </div>
@@ -620,7 +451,7 @@ export default function CatalogPage() {
                 onChange={(e) => setSearchInput(e.target.value)}
                 onBlur={(e) => commitSearch(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+                  if (e.key === 'Enter') {
                     e.preventDefault();
                     commitSearch(e.currentTarget.value);
                   }
@@ -634,9 +465,7 @@ export default function CatalogPage() {
             {error ? (
               <div className="py-20 text-center text-q-muted">{error}</div>
             ) : isLoading ? (
-              <div className="py-20 text-center text-q-muted">
-                Загрузка товаров...
-              </div>
+              <div className="py-20 text-center text-q-muted">Загрузка товаров...</div>
             ) : products.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
                 {products.map((product) => (
@@ -651,9 +480,7 @@ export default function CatalogPage() {
               </div>
             ) : (
               <div className="py-20 text-center flex flex-col items-center gap-4">
-                <p className="text-q-muted text-base font-medium">
-                  По выбранным фильтрам ничего не найдено
-                </p>
+                <p className="text-q-muted text-base font-medium">По выбранным фильтрам ничего не найдено</p>
                 <Button variant="outlineMuted" onClick={clearFilters}>
                   Сбросить фильтры
                 </Button>

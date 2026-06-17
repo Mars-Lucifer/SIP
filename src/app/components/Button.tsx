@@ -18,15 +18,17 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
   as?: "button" | "a";
   href?: string;
+  target?: string;
+  rel?: string;
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
   dark: "bg-q-dark text-white hover:bg-q-dark-soft",
   accent: "bg-q-accent text-white hover:bg-q-accent-soft",
-  fillGray: "bg-q-fill-gray text-white hover:bg-q-fill-gray-soft",
+  fillGray: "bg-white-gray text-q-dark hover:bg-white-gray",
   outline: "border border-q-dark text-q-dark bg-transparent hover:bg-q-surface",
   outlineMuted:
-    "border border-q-border text-q-dark bg-white hover:bg-q-surface hover:border-q-border",
+    "border border-q-border text-q-dark bg-white-gray hover:bg-white-gray hover:border-q-border",
   danger: "bg-q-danger text-white hover:bg-q-danger-soft",
   ghost: "bg-q-surface text-q-dark hover:bg-q-surface-soft",
 };
@@ -62,8 +64,10 @@ export function Button({
     .join(" ");
 
   if (Tag === "a" && href) {
+    const anchorProps = props as React.AnchorHTMLAttributes<HTMLAnchorElement>;
+
     return (
-      <a href={href} className={classes}>
+      <a href={href} className={classes} {...anchorProps}>
         {icon && iconPosition === "left" && icon}
         {children}
         {icon && iconPosition === "right" && icon}

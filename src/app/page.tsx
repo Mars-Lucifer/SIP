@@ -1,40 +1,49 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ArrowUpRight } from 'lucide-react';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 
-import { useAuth } from '@/app/auth-provider';
-import { Button } from '@/app/components/Button';
-import { Footer } from '@/app/components/Footer';
-import { Header } from '@/app/components/Header';
-import { ProductCard } from '@/app/components/ProductCard';
+import { Button } from "@/app/components/Button";
+import { Footer } from "@/app/components/Footer";
+import { Header } from "@/app/components/Header";
+import { ProductCard } from "@/app/components/ProductCard";
 import {
   apiRequest,
   formatDate,
   POPULAR_TABS,
   type NewsItem,
   type ProductDetail,
-} from '@/app/lib/api';
+} from "@/app/lib/api";
+
+const HERO_RIGHT_IMAGE = "/assets/images/home/hero-right.png";
+const ABOUT_IMAGE_LEFT = "/assets/images/home/about-left.png";
+const ABOUT_IMAGE_RIGHT = "/assets/images/home/about-right.png";
+
+function PanelImage({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div className="relative overflow-hidden rounded-[60px] bg-white/10">
+      <img src={src} alt={alt} className="h-full w-full object-cover" />
+      <div className="pointer-events-none absolute inset-0 rounded-[60px] border-[20px] border-white/60 blur-[30px]" />
+    </div>
+  );
+}
 
 export default function HomePage() {
-  const router = useRouter();
-  const { user } = useAuth();
   const [activeCategory, setActiveCategory] = useState(0);
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [popularProducts, setPopularProducts] = useState<ProductDetail[]>([]);
-  const [newsError, setNewsError] = useState('');
-  const [productsError, setProductsError] = useState('');
+  const [newsError, setNewsError] = useState("");
+  const [productsError, setProductsError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
 
-    apiRequest<{ items: NewsItem[] }>('/api/news')
+    apiRequest<{ items: NewsItem[] }>("/api/news")
       .then((response) => {
         if (!cancelled) {
           setNewsItems(response.items);
-          setNewsError('');
+          setNewsError("");
         }
       })
       .catch((error: Error) => {
@@ -58,7 +67,7 @@ export default function HomePage() {
       .then((response) => {
         if (!cancelled) {
           setPopularProducts(response.items);
-          setProductsError('');
+          setProductsError("");
         }
       })
       .catch((error: Error) => {
@@ -72,118 +81,190 @@ export default function HomePage() {
     };
   }, [activeCategory]);
 
-  const handleAddToCart = async (productId: number) => {
-    if (!user) {
-      router.push('/auth');
-      return;
-    }
-
-    try {
-      await apiRequest('/api/cart/items', {
-        method: 'POST',
-        body: JSON.stringify({ productId }),
-      });
-      window.alert('Товар добавлен в корзину');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Не удалось добавить товар';
-      window.alert(message);
-    }
-  };
-
   const mainNews = newsItems[0];
-  const secondaryNews = newsItems.slice(1, 3);
+  const sidebarNews = newsItems[1] ?? newsItems[0];
+  const heroTitle =
+    mainNews?.title ?? "Давайте готовить невероятные напитки вместе!";
+  const heroDescription =
+    mainNews?.description ??
+    "В SIP Market мы собираем всё для красивых домашних напитков, уютных ритуалов и маленьких поводов для удовольствия.";
+  const heroDate = mainNews?.activeUntil
+    ? formatDate(mainNews.activeUntil)
+    : "Без срока";
 
   return (
     <div className="min-h-screen bg-white font-[Manrope,sans-serif]">
       <Header />
 
-      <main className="px-4 sm:px-6 xl:px-[60px] max-w-[1440px] mx-auto">
+      <main className="mx-auto max-w-[1440px] px-4 sm:px-6 xl:px-[60px]">
         <section className="mt-6 sm:mt-8">
-          <div className="flex gap-5 overflow-x-auto pb-2 scrollbar-none">
-            <div className="bg-q-dark rounded-q-hero p-8 flex flex-col justify-between overflow-hidden relative shrink-0 w-full sm:w-auto sm:flex-1 min-h-[300px] sm:min-h-[400px]">
-              <div className="absolute right-0 top-[-10%] w-[45%] h-[130%] pointer-events-none">
-                <div
-                  className="w-full h-full opacity-80"
-                  style={{
-                    background:
-                      'radial-gradient(ellipse at 50% 80%, var(--q-accent) 0%, var(--q-accent) 30%, transparent 70%)',
-                    filter: 'blur(32px)',
-                  }}
-                />
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(340px,0.95fr)]">
+            <article
+              className="relative min-h-[300px] overflow-hidden rounded-[60px] p-8 sm:min-h-[460px] sm:p-10"
+              style={{
+                backgroundImage: [
+                  "radial-gradient(circle at 18% 18%, rgba(88,17,191,0.98) 0%, rgba(88,17,191,0) 38%)",
+                  "radial-gradient(circle at 80% 20%, rgba(203,140,253,0.98) 0%, rgba(203,140,253,0) 34%)",
+                  "radial-gradient(circle at 82% 82%, rgba(174,16,195,0.98) 0%, rgba(174,16,195,0) 40%)",
+                  "radial-gradient(circle at 20% 82%, rgba(145,29,250,0.98) 0%, rgba(145,29,250,0) 36%)",
+                  "linear-gradient(135deg, #5811bf 0%, #cb8cfd 50%, #ae10c3 100%)",
+                ].join(", "),
+              }}
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.14),transparent_46%)]" />
+
+              <div className="relative z-10 flex h-full flex-col justify-between gap-8">
+                <h1 className="max-w-[560px] text-[32px] font-medium leading-[1.08] text-white sm:text-[48px]">
+                  {heroTitle}
+                </h1>
+
+                <div className="flex flex-col gap-5">
+                  <p className="max-w-[520px] text-sm leading-normal text-white/70 sm:text-base">
+                    {heroDescription}
+                  </p>
+
+                  <div className="flex items-center gap-4">
+                    <div className="h-1 flex-1 rounded-full bg-white/12">
+                      <div className="h-full w-[72%] rounded-full bg-white" />
+                    </div>
+                    <span className="shrink-0 text-sm font-medium text-white/70">
+                      {newsItems.length > 0
+                        ? `01 / ${String(newsItems.length).padStart(2, "0")}`
+                        : "01 / 01"}
+                    </span>
+                  </div>
+
+                  {newsError ? (
+                    <p className="text-sm text-white/60">{newsError}</p>
+                  ) : null}
+                </div>
+              </div>
+            </article>
+
+            <article className="relative flex min-h-[300px] flex-col items-center justify-between overflow-hidden rounded-[60px] bg-gray-plus p-8 text-center sm:min-h-[460px] sm:p-10">
+              <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_56%)]" />
+
+              <div className="relative z-10 text-[32px] font-medium leading-[1.08] text-q-dark sm:text-[48px]">
+                {sidebarNews?.activeUntil
+                  ? formatDate(sidebarNews.activeUntil)
+                  : heroDate}
               </div>
 
-              <h2 className="text-white text-[32px] sm:text-[48px] font-medium leading-[1.08] relative z-10 max-w-[500px]">
-                {mainNews?.title ?? 'Новости скоро появятся'}
-              </h2>
+              <div className="absolute inset-x-0 bottom-0 z-10 flex justify-center px-8">
+                <img
+                  src={HERO_RIGHT_IMAGE}
+                  alt="illustration"
+                  className="w-full max-w-[320px] object-contain"
+                />
+              </div>
+            </article>
+          </div>
+        </section>
 
-              <div className="flex flex-col gap-5 relative z-10">
-                <div className="flex items-end gap-4">
-                  <p className="text-q-muted text-sm sm:text-base font-normal flex-1">
-                    {mainNews?.description ??
-                      'Пока новости загружаются, вы уже можете смотреть каталог и собирать корзину.'}
-                  </p>
-                  <p className="text-white text-[28px] sm:text-[40px] font-medium leading-[1.08] text-right shrink-0">
-                    {mainNews?.activeUntil ? formatDate(mainNews.activeUntil) : 'Без срока'}
-                  </p>
-                </div>
-                <div className="h-1 bg-q-dark-subtle rounded-full w-full">
-                  <div className="h-full bg-white rounded-full w-[72%]" />
-                </div>
-                {newsError && <p className="text-q-muted text-sm">{newsError}</p>}
+        <section className="mt-14 sm:mt-20">
+          <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
+            <div className="flex flex-col gap-6 max-w-[650px]">
+              <h2 className="text-[36px] font-medium leading-[1.08] text-q-dark sm:text-[48px]">
+                About SIP
+              </h2>
+              <p className="max-w-[315px] text-base leading-normal text-q-muted">
+                SIP - curated shop с ингредиентами для домашних напитков и
+                красивых ритуалов. От blue tea lemonade до matcha latte - все
+                для того, чтобы повторить любимые cafe-style рецепты дома.
+              </p>
+
+              <div className="flex flex-wrap items-start gap-2.5">
+                <Button
+                  as="a"
+                  href="https://instagram.com/sip_market"
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="fillGray"
+                  size="md"
+                  icon={
+                    <img
+                      src="/assets/icons/instagram.svg"
+                      alt=""
+                      className="size-4"
+                    />
+                  }
+                >
+                  Инстаграм
+                </Button>
+                <Button
+                  as="a"
+                  href="https://t.me/sip_market"
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="fillGray"
+                  size="md"
+                  icon={
+                    <img
+                      src="/assets/icons/telegram.svg"
+                      alt=""
+                      className="size-4"
+                    />
+                  }
+                >
+                  Телеграм
+                </Button>
+                <Button
+                  as="a"
+                  href="https://vk.com/sip_market"
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="fillGray"
+                  size="md"
+                  icon={
+                    <img src="/assets/icons/vk.svg" alt="" className="size-4" />
+                  }
+                >
+                  ВК
+                </Button>
               </div>
             </div>
 
-            <div className="hidden sm:flex flex-col sm:flex-row gap-5 shrink-0">
-              {secondaryNews.map((newsItem) => (
-                <div
-                  key={newsItem.id}
-                  className="h-full sm:h-[400px] w-[280px] sm:w-[315px] rounded-q-hero border border-q-dark p-8 flex flex-col items-start justify-between transition-all duration-200 hover:bg-q-surface"
-                >
-                  <p className="text-q-dark text-[28px] sm:text-[32px] font-medium leading-[1.08]">
-                    {newsItem.title}
-                  </p>
-                  <p className="text-q-muted text-sm sm:text-base leading-normal">
-                    {newsItem.description}
-                  </p>
-                </div>
-              ))}
+            <div className="grid gap-4 sm:grid-cols-2 xl:w-[650px]">
+              <div className="h-[420px]">
+                <PanelImage src={ABOUT_IMAGE_LEFT} alt="About SIP visual one" />
+              </div>
+              <div className="h-[420px]">
+                <PanelImage
+                  src={ABOUT_IMAGE_RIGHT}
+                  alt="About SIP visual two"
+                />
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="mt-14 sm:mt-20 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-          <h2 className="text-q-dark text-[36px] sm:text-[48px] font-medium leading-[1.08] max-w-[500px]">
-            Первый интернет-магазин ноутбуков
-          </h2>
-          <p className="text-q-muted text-base font-normal leading-normal sm:max-w-[315px]">
-            Вы тоже любите ноутбуки и компактность? Тогда нам по пути! Магазин уже работает с
-            реальным API, а каталог и заказы теперь берутся из базы.
-          </p>
-        </section>
-
         <section className="mt-14 sm:mt-20">
-          <div className="flex items-center justify-between mb-6 sm:mb-8">
-            <h2 className="text-q-dark text-[32px] sm:text-[40px] font-medium leading-[1.08]">
+          <div className="mb-6 flex items-center justify-between gap-4 sm:mb-8">
+            <h2 className="text-[32px] font-medium leading-[1.08] text-q-dark sm:text-[40px]">
               Популярные товары
             </h2>
             <Link href="/catalog" className="no-underline">
-              <Button variant="outline" size="md" icon={<ArrowUpRight size={18} />}>
+              <Button
+                variant="outline"
+                size="md"
+                icon={<ArrowUpRight size={18} />}
+              >
                 Перейти в каталог
               </Button>
             </Link>
           </div>
 
-          <div className="flex gap-6 sm:gap-10 overflow-x-auto pb-2 mb-6 sm:mb-8 scrollbar-none border-b border-q-surface">
+          <div className="mb-6 flex gap-6 overflow-x-auto border-b border-q-surface pb-2 scrollbar-none sm:mb-8 sm:gap-10">
             {POPULAR_TABS.map((tab, index) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveCategory(index)}
                 className={[
-                  'text-xl sm:text-2xl font-medium leading-[1.08] whitespace-nowrap pb-3 border-b-2 transition-all duration-150 shrink-0 cursor-pointer',
+                  "shrink-0 cursor-pointer whitespace-nowrap border-b-2 pb-3 text-xl font-medium leading-[1.08] transition-all duration-150 sm:text-2xl",
                   activeCategory === index
-                    ? 'text-q-dark border-q-dark'
-                    : 'text-q-muted border-transparent hover:text-q-dark',
-                ].join(' ')}
+                    ? "border-q-dark text-q-dark"
+                    : "border-transparent text-q-muted hover:text-q-dark",
+                ].join(" ")}
               >
                 {tab.label}
               </button>
@@ -191,9 +272,11 @@ export default function HomePage() {
           </div>
 
           {productsError ? (
-            <div className="py-10 text-center text-q-muted">{productsError}</div>
+            <div className="py-10 text-center text-q-muted">
+              {productsError}
+            </div>
           ) : popularProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
               {popularProducts.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -206,7 +289,8 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="py-10 text-center text-q-muted">
-              Популярные товары появятся после добавления товаров и первых заказов.
+              Популярные товары появятся после добавления товаров и первых
+              заказов.
             </div>
           )}
         </section>

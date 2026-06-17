@@ -1,13 +1,13 @@
 export function Footer() {
   return (
-    <footer className="w-full px-4 sm:px-6 xl:px-[60px] pb-16 sm:pb-20">
-      <div className="max-w-[1320px] mx-auto">
-        <div className="h-px bg-q-surface w-full mb-8 sm:mb-10" />
+    <footer className="w-full px-4 pb-20 pt-0 sm:px-6 xl:px-[60px]">
+      <div className="mx-auto max-w-[1320px]">
+        <div className="h-0.5 w-full bg-q-surface" />
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10">
+        <div className="mt-10 grid grid-cols-2 gap-8 sm:grid-cols-2 lg:grid-cols-4 sm:gap-10">
           <div className="flex flex-col gap-5">
-            <p className="text-q-dark text-2xl font-medium leading-[1.08]">
-              Соцсети
+            <p className="text-2xl font-medium leading-[1.08] text-q-dark">
+              Наши сети
             </p>
             <div className="flex items-center gap-3.5">
               <a
@@ -20,7 +20,7 @@ export function Footer() {
                 <img
                   src="/assets/icons/telegram.svg"
                   alt="telegram"
-                  className="h-[2.5rem] w-[2.5rem]"
+                  className="h-9 w-9"
                 />
               </a>
               <a
@@ -33,49 +33,49 @@ export function Footer() {
                 <img
                   src="/assets/icons/vk.svg"
                   alt="vk"
-                  className="h-[2.5rem] w-[2.5rem]"
+                  className="h-9 w-9"
                 />
               </a>
             </div>
           </div>
 
           <div className="flex flex-col gap-5">
-            <p className="text-q-dark text-2xl font-medium leading-[1.08]">
+            <p className="text-2xl font-medium leading-[1.08] text-q-dark">
               Контакты
             </p>
             <div className="flex flex-col gap-5">
               <a
-                href="tel:88005551921"
-                className="text-q-muted text-base font-medium no-underline hover:text-q-dark transition-colors duration-150"
+                href="tel:88005553535"
+                className="text-base font-medium text-q-muted no-underline transition-colors duration-150 hover:text-q-dark"
               >
-                8 800 555-19-21
+                8 800 555-35-35
               </a>
               <a
-                href="mailto:help@sip-market.ru"
-                className="text-q-muted text-base font-medium no-underline hover:text-q-dark transition-colors duration-150"
+                href="mailto:help@sip.ru"
+                className="text-base font-medium text-q-muted no-underline transition-colors duration-150 hover:text-q-dark"
               >
-                help@sip-market.ru
+                help@sip.ru
               </a>
               <a
-                href="https://t.me/sip_market"
+                href="https://t.me/sipru"
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 no-underline hover:opacity-75 transition-opacity duration-150"
+                className="flex items-center gap-2 no-underline transition-opacity duration-150 hover:opacity-75"
               >
                 <img
                   src="/assets/icons/telegram.svg"
                   alt="telegram"
                   className="h-[1.125rem] w-[1.125rem]"
                 />
-                <span className="text-q-muted text-base font-medium">
-                  @sip_market
+                <span className="text-base font-medium text-q-muted">
+                  @sipru
                 </span>
               </a>
             </div>
           </div>
 
           <div className="flex flex-col gap-5">
-            <p className="text-q-dark text-2xl font-medium leading-[1.08]">
+            <p className="text-2xl font-medium leading-[1.08] text-q-dark">
               Документы
             </p>
             <div className="flex flex-col gap-5">
@@ -88,7 +88,7 @@ export function Footer() {
                 <a
                   key={doc}
                   href="#"
-                  className="text-q-muted text-base font-medium no-underline hover:text-q-dark transition-colors duration-150"
+                  className="text-base font-medium text-q-muted no-underline transition-colors duration-150 hover:text-q-dark"
                 >
                   {doc}
                 </a>
@@ -97,18 +97,14 @@ export function Footer() {
           </div>
 
           <div className="flex flex-col gap-5">
-            <p className="text-q-dark text-2xl font-medium leading-[1.08]">
+            <p className="text-2xl font-medium leading-[1.08] text-q-dark">
               Данные
             </p>
             <div className="flex flex-col gap-5">
-              <p className="text-q-muted text-base font-medium">
-                ИНН: 7723456789
-              </p>
-              <p className="text-q-muted text-base font-medium">
-                ООО &quot;SIP Market&quot;
-              </p>
-              <p className="text-q-muted text-base font-medium">
-                Москва, ул. Диджитал, д. 12, офис 21
+              <p className="text-base font-medium text-q-muted">ИНН: 123456789</p>
+              <p className="text-base font-medium text-q-muted">ООО &quot;SIP&quot;</p>
+              <p className="text-base font-medium text-q-muted">
+                Город Тоски, улица грусти, переулок отчаяния, дом 13
               </p>
             </div>
           </div>

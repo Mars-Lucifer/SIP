@@ -9,11 +9,10 @@ export class ApiError extends Error {
 }
 
 export type UserRole = 'user' | 'admin';
-export type ProductCategory = 'laptop' | 'mini_pc';
-export type OrderItemCategory = ProductCategory | 'peripheral';
-export type ProcessorType = 'intel' | 'amd' | 'arm' | 'apple';
-export type GraphicsType = 'integrated' | 'discrete';
-export type PopularCategory = 'work_laptops' | 'gaming_laptops' | 'mini_pc';
+export type ProductCategory = 'tea' | 'syrups' | 'additions' | 'drink_kits';
+export type ProductTaste = 'травяной' | 'цитрусовый' | 'ягодный' | 'экзотический' | 'слайдий';
+export type OrderItemCategory = ProductCategory;
+export type PopularCategory = ProductCategory;
 export type OrderStatus = 'pending' | 'shipped';
 
 export interface AuthUser {
@@ -38,12 +37,8 @@ export interface ProductListItem {
   category: ProductCategory;
   brandId: number;
   brandName: string;
-  screenInches: number | null;
-  processor: ProcessorType | null;
-  ramGb: number | null;
-  storageGb: number | null;
-  graphicsType: GraphicsType;
-  graphicsModel: string | null;
+  weightGrams: number | null;
+  tastes: ProductTaste[];
   image: string | null;
   rating: number;
   reviewCount: number;
@@ -79,12 +74,8 @@ export interface OrderItem {
   price: number;
   category: OrderItemCategory;
   brandName: string;
-  screenInches: number | null;
-  processor: ProcessorType | null;
-  ramGb: number | null;
-  storageGb: number | null;
-  graphicsType: GraphicsType;
-  graphicsModel: string | null;
+  weightGrams: number | null;
+  tastes: ProductTaste[];
   imageUrl: string | null;
   createdAt: number;
   userRating: number | null;
@@ -165,77 +156,39 @@ export function formatDateTime(timestamp: number) {
 
 export function categoryToLabel(category: OrderItemCategory) {
   switch (category) {
-    case 'laptop':
-      return 'Ноутбуки';
-    case 'mini_pc':
-      return 'Мини ПК';
-    case 'peripheral':
-      return 'Периферия';
+    case 'tea':
+      return 'Чаи';
+    case 'syrups':
+      return 'Сиропы';
+    case 'additions':
+      return 'Додавки';
+    case 'drink_kits':
+      return 'Drink Kits';
     default:
-      return 'Мини ПК';
+      return 'Чаи';
   }
 }
 
 export function catalogLabelToCategory(label: string): ProductCategory | undefined {
   switch (label) {
-    case 'Ноутбуки':
-      return 'laptop';
-    case 'Мини ПК':
-      return 'mini_pc';
-    default:
-      return undefined;
-  }
-}
-
-export function processorToLabel(value: ProcessorType | null) {
-  switch (value) {
-    case 'intel':
-      return 'Intel';
-    case 'amd':
-      return 'AMD';
-    case 'arm':
-      return 'Arm';
-    case 'apple':
-      return 'Apple';
-    default:
-      return '';
-  }
-}
-
-export function labelToProcessor(value: string): ProcessorType | undefined {
-  switch (value) {
-    case 'Intel':
-      return 'intel';
-    case 'AMD':
-      return 'amd';
-    case 'Arm':
-      return 'arm';
-    case 'Apple':
-      return 'apple';
-    default:
-      return undefined;
-  }
-}
-
-export function graphicsTypeToLabel(value: GraphicsType) {
-  return value === 'discrete' ? 'Дискретная' : 'Встроенная';
-}
-
-export function labelToGraphicsType(value: string): GraphicsType | undefined {
-  switch (value) {
-    case 'Встроенная':
-      return 'integrated';
-    case 'Дискретная':
-      return 'discrete';
+    case 'Чаи':
+      return 'tea';
+    case 'Сиропы':
+      return 'syrups';
+    case 'Додавки':
+      return 'additions';
+    case 'Drink Kits':
+      return 'drink_kits';
     default:
       return undefined;
   }
 }
 
 export const POPULAR_TABS: Array<{ key: PopularCategory; label: string }> = [
-  { key: 'work_laptops', label: 'Рабочие ноутбуки' },
-  { key: 'gaming_laptops', label: 'Игровые ноутбуки' },
-  { key: 'mini_pc', label: 'Мини ПК' },
+  { key: 'tea', label: 'Чаи' },
+  { key: 'syrups', label: 'Сиропы' },
+  { key: 'additions', label: 'Додавки' },
+  { key: 'drink_kits', label: 'Drink Kits' },
 ];
 
 export async function uploadProductImages(files: File[]) {

@@ -339,21 +339,15 @@ export function checkout(userId: number, payload: CheckoutPayload) {
 
   const orderId = db.transaction((tx) => {
     const cartRows = tx
-      .select({
-        productId: products.id,
-        quantity: cartItems.quantity,
-        name: products.name,
-        price: products.price,
-        category: products.category,
-        brandName: brands.name,
-        screenInches: products.screenInches,
-        processor: products.processor,
-        ramGb: products.ramGb,
-        storageGb: products.storageGb,
-        graphicsType: products.graphicsType,
-        graphicsModel: products.graphicsModel,
-        imageUrl: imageExpression.as('image'),
-      })
+    .select({
+      productId: products.id,
+      quantity: cartItems.quantity,
+      name: products.name,
+      price: products.price,
+      category: products.category,
+      brandName: brands.name,
+      imageUrl: imageExpression.as('image'),
+    })
       .from(cartItems)
       .innerJoin(products, eq(products.id, cartItems.productId))
       .innerJoin(brands, eq(brands.id, products.brandId))
@@ -396,12 +390,12 @@ export function checkout(userId: number, payload: CheckoutPayload) {
         productPrice: cartRow.price,
         productCategory: cartRow.category,
         brandName: cartRow.brandName,
-        screenInches: cartRow.screenInches,
-        processor: cartRow.processor,
-        ramGb: cartRow.ramGb,
-        storageGb: cartRow.storageGb,
-        graphicsType: cartRow.graphicsType,
-        graphicsModel: cartRow.graphicsModel,
+        screenInches: null,
+        processor: null,
+        ramGb: null,
+        storageGb: null,
+        graphicsType: 'integrated',
+        graphicsModel: null,
         imageUrl: cartRow.imageUrl,
         createdAt: now,
       })),

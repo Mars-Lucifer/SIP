@@ -9,17 +9,10 @@ import { Button } from '@/app/components/Button';
 import { Footer } from '@/app/components/Footer';
 import { Header } from '@/app/components/Header';
 import { InputGray, InputWhite } from '@/app/components/Input';
-import {
-  apiRequest,
-  catalogLabelToCategory,
-  labelToGraphicsType,
-  labelToProcessor,
-  uploadProductImages,
-} from '@/app/lib/api';
+import { apiRequest, catalogLabelToCategory, uploadProductImages } from '@/app/lib/api';
 
-const CATEGORIES = ['Ноутбуки', 'Мини ПК'];
-const PROCESSORS = ['Intel', 'AMD', 'Arm', 'Apple'];
-const GPU_TYPES = ['Встроенная', 'Дискретная'];
+const CATEGORIES = ['Чаи', 'Сиропы', 'Додавки', 'Drink Kits'] as const;
+const TASTES = ['травяной', 'цитрусовый', 'ягодный', 'экзотический', 'слайдий'] as const;
 
 function RadioItem({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
   return (
@@ -38,6 +31,31 @@ function RadioItem({ label, checked, onChange }: { label: string; checked: boole
   );
 }
 
+function CheckboxItem({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <label className="flex items-center gap-2 cursor-pointer group">
+      <div
+        onClick={onChange}
+        className={[
+          'size-4 rounded-[4px] border-2 flex items-center justify-center transition-all duration-150 shrink-0',
+          checked ? 'border-q-dark bg-q-dark' : 'border-q-border group-hover:border-q-muted',
+        ].join(' ')}
+      >
+        {checked && <span className="text-white text-[10px] leading-none">✓</span>}
+      </div>
+      <span className="text-q-dark text-base font-medium">{label}</span>
+    </label>
+  );
+}
+
 export default function AdminAddPage() {
   const router = useRouter();
   const { user, ready } = useAuth();
@@ -49,17 +67,12 @@ export default function AdminAddPage() {
   const [form, setForm] = useState({
     name: '',
     price: '',
-    category: 'Ноутбуки',
+    category: 'Чаи',
     brand: '',
     customBrand: '',
-    screen: '',
-    ram: '',
-    storage: '',
-    processor: '',
-    gpu: '',
-    customGpu: '',
+    weight: '',
+    tastes: [] as string[],
   });
-  const isMiniPc = form.category === 'Мини ПК';
 
   useEffect(() => {
     if (!ready) {
@@ -95,6 +108,15 @@ export default function AdminAddPage() {
     };
   }, [ready, router, user]);
 
+  const toggleTaste = (taste: string) => {
+    setForm((current) => ({
+      ...current,
+      tastes: current.tastes.includes(taste)
+        ? current.tastes.filter((item) => item !== taste)
+        : [...current.tastes, taste],
+    }));
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsSubmitting(true);
@@ -106,22 +128,27 @@ export default function AdminAddPage() {
         throw new Error('Можно выбрать не больше 10 изображений');
       }
 
+      if (form.tastes.length === 0) {
+        throw new Error('Нужно выбрать хотя бы один вкус');
+      }
+
       const imageUrls = selectedFiles.length > 0 ? await uploadProductImages(selectedFiles) : [];
       const brandName = form.brand === '__custom' ? form.customBrand.trim() : form.brand.trim();
+      const category = catalogLabelToCategory(form.category);
+
+      if (!category) {
+        throw new Error('Некорректная категория');
+      }
 
       await apiRequest('/api/admin/products', {
         method: 'POST',
         body: JSON.stringify({
           name: form.name,
-          category: catalogLabelToCategory(form.category),
+          category,
           price: Number(form.price),
           brandName,
-          screenInches: isMiniPc ? null : form.screen ? Number(form.screen) : null,
-          processor: form.processor ? labelToProcessor(form.processor) : null,
-          ramGb: form.ram ? Number(form.ram) : null,
-          storageGb: form.storage ? Number(form.storage) : null,
-          graphicsType: labelToGraphicsType(form.gpu),
-          graphicsModel: form.gpu === 'Дискретная' ? form.customGpu.trim() : null,
+          weightGrams: form.weight ? Number(form.weight) : null,
+          tastes: form.tastes,
           imageUrls,
         }),
       });
@@ -131,15 +158,11 @@ export default function AdminAddPage() {
       setForm({
         name: '',
         price: '',
-        category: 'Ноутбуки',
+        category: 'Чаи',
         brand: '',
         customBrand: '',
-        screen: '',
-        ram: '',
-        storage: '',
-        processor: '',
-        gpu: '',
-        customGpu: '',
+        weight: '',
+        tastes: [],
       });
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Не удалось добавить товар');
@@ -188,13 +211,7 @@ export default function AdminAddPage() {
                             key={category}
                             label={category}
                             checked={form.category === category}
-                            onChange={() =>
-                              setForm((current) => ({
-                                ...current,
-                                category,
-                                screen: category === 'Мини ПК' ? '' : current.screen,
-                              }))
-                            }
+                            onChange={() => setForm((current) => ({ ...current, category }))}
                           />
                         ))}
                       </div>
@@ -241,65 +258,29 @@ export default function AdminAddPage() {
                   </div>
 
                   <div className="flex flex-col gap-4">
-                    <p className="text-q-dark text-base font-medium">Характеристики</p>
-                    <div className="flex flex-wrap gap-3">
-                      {!isMiniPc && (
-                        <InputWhite
-                          type="number"
-                          placeholder="Диагональ экрана"
-                          className="w-36"
-                          value={form.screen}
-                          onChange={(e) => setForm((current) => ({ ...current, screen: e.target.value }))}
-                        />
-                      )}
-                      <InputWhite
-                        type="number"
-                        placeholder="ОЗУ (Гб)"
-                        className="w-28"
-                        value={form.ram}
-                        onChange={(e) => setForm((current) => ({ ...current, ram: e.target.value }))}
-                      />
-                      <InputWhite
-                        type="number"
-                        placeholder="Накопитель (Гб)"
-                        className="w-36"
-                        value={form.storage}
-                        onChange={(e) => setForm((current) => ({ ...current, storage: e.target.value }))}
-                      />
-                    </div>
+                    <p className="text-q-dark text-base font-medium">Вес</p>
+                    <InputWhite
+                      type="number"
+                      placeholder="Вес в граммах"
+                      value={form.weight}
+                      onChange={(e) => setForm((current) => ({ ...current, weight: e.target.value }))}
+                    />
+                    <div className="h-px bg-q-border" />
+                  </div>
 
-                    <p className="text-q-dark text-base font-medium">Процессор</p>
+                  <div className="flex flex-col gap-4">
+                    <p className="text-q-dark text-base font-medium">Вкусы</p>
                     <div className="flex flex-wrap gap-3">
-                      {PROCESSORS.map((processor) => (
-                        <RadioItem
-                          key={processor}
-                          label={processor}
-                          checked={form.processor === processor}
-                          onChange={() => setForm((current) => ({ ...current, processor }))}
+                      {TASTES.map((taste) => (
+                        <CheckboxItem
+                          key={taste}
+                          label={taste}
+                          checked={form.tastes.includes(taste)}
+                          onChange={() => toggleTaste(taste)}
                         />
                       ))}
                     </div>
-
-                    <p className="text-q-dark text-base font-medium">Видеокарта</p>
-                    <div className="flex flex-wrap gap-3">
-                      {GPU_TYPES.map((gpu) => (
-                        <RadioItem
-                          key={gpu}
-                          label={gpu}
-                          checked={form.gpu === gpu}
-                          onChange={() => setForm((current) => ({ ...current, gpu, customGpu: '' }))}
-                        />
-                      ))}
-                    </div>
-                    {form.gpu === 'Дискретная' && (
-                      <InputGray
-                        type="text"
-                        placeholder="Название видеокарты"
-                        value={form.customGpu}
-                        onChange={(e) => setForm((current) => ({ ...current, customGpu: e.target.value }))}
-                        required
-                      />
-                    )}
+                    <div className="h-px bg-q-border" />
                   </div>
 
                   <div className="flex flex-col gap-4">

@@ -82,7 +82,7 @@ export function Header({
 
   return (
     <header className="sticky top-0 z-50 isolate w-full px-4 sm:px-6 xl:px-[60px] pt-4 sm:pt-5">
-      <div className="max-w-[1320px] mx-auto rounded-full border border-white/70 bg-white/60 px-4 sm:px-5 lg:px-6 py-3.5 backdrop-blur-md shadow-[0_18px_50px_rgba(31,33,40,0.08)]">
+      <div className="max-w-[1320px] mx-auto rounded-full border border-white/70 bg-white/60 px-4 sm:px-5 lg:px-6 py-3.5 backdrop-blur-md !shadow-none">
         <div className="flex items-center gap-4 sm:gap-5 xl:gap-10">
           <Link
             href="/"
@@ -161,7 +161,7 @@ export function Header({
           menuOpen ? "max-h-[32rem] opacity-100 mt-3" : "max-h-0 opacity-0",
         ].join(" ")}
       >
-        <div className="rounded-[28px] border border-white/70 bg-white/70 backdrop-blur-md p-4 shadow-[0_18px_50px_rgba(31,33,40,0.08)]">
+        <div className="rounded-[28px] border border-white/70 bg-white/70 backdrop-blur-md p-4 !shadow-none">
           <div className="flex flex-col gap-2">
             <div className="md:hidden pb-2">
               <InputSearch

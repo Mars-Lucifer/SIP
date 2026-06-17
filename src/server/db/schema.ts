@@ -7,6 +7,7 @@ import {
   POPULAR_PRODUCT_CATEGORIES,
   PROCESSOR_TYPES,
   PRODUCT_CATEGORIES,
+  PRODUCT_TASTES,
   USER_ROLES,
 } from '@/server/constants';
 
@@ -81,21 +82,32 @@ export const products = sqliteTable(
     brandId: integer('brand_id')
       .notNull()
       .references(() => brands.id, { onDelete: 'restrict' }),
-    screenInches: real('screen_inches'),
-    processor: text('processor', { enum: PROCESSOR_TYPES }),
-    ramGb: integer('ram_gb'),
-    storageGb: integer('storage_gb'),
-    graphicsType: text('graphics_type', { enum: GRAPHICS_TYPES }).notNull(),
-    graphicsModel: text('graphics_model'),
+    weightGrams: integer('weight_grams'),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },
   (table) => ({
     categoryIndex: index('products_category_index').on(table.category),
     brandIndex: index('products_brand_index').on(table.brandId),
-    processorIndex: index('products_processor_index').on(table.processor),
-    graphicsIndex: index('products_graphics_index').on(table.graphicsType),
     searchIndex: index('products_search_index').on(table.nameSearch),
+  }),
+);
+
+export const productTastes = sqliteTable(
+  'product_tastes',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    productId: integer('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    taste: text('taste', { enum: PRODUCT_TASTES }).notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => ({
+    productIndex: index('product_tastes_product_index').on(table.productId),
+    tasteIndex: index('product_tastes_taste_index').on(table.taste),
+    uniqueProductTaste: uniqueIndex('product_tastes_product_taste_unique').on(table.productId, table.taste),
   }),
 );
 

@@ -10,7 +10,7 @@ import { CartQuantityControl } from '@/app/components/CartQuantityControl';
 import { Footer } from '@/app/components/Footer';
 import { Header } from '@/app/components/Header';
 import { StarRating } from '@/app/components/StarRating';
-import { apiRequest, processorToLabel, type ProductDetail } from '@/app/lib/api';
+import { apiRequest, categoryToLabel, type ProductDetail } from '@/app/lib/api';
 
 export default function ItemPage() {
   const params = useParams<{ id: string }>();
@@ -74,8 +74,7 @@ export default function ItemPage() {
         await decrementProduct(product.id);
       }
     } catch (requestError) {
-      const message =
-        requestError instanceof Error ? requestError.message : 'Не удалось обновить корзину';
+      const message = requestError instanceof Error ? requestError.message : 'Не удалось обновить корзину';
       window.alert(message);
     } finally {
       setIsCartUpdating(false);
@@ -134,56 +133,35 @@ export default function ItemPage() {
                 </h1>
                 <div className="flex items-center gap-3.5">
                   <StarRating rating={product.rating} />
-                  <span className="text-q-muted text-base font-medium">
-                    {product.reviewCount} отзывов
-                  </span>
+                  <span className="text-q-muted text-base font-medium">{product.reviewCount} отзывов</span>
                 </div>
               </div>
 
               <div className="flex flex-col gap-3.5">
                 <div className="flex items-center justify-between text-base font-medium">
+                  <span className="text-q-muted">Категория</span>
+                  <span className="text-q-dark text-right">{categoryToLabel(product.category)}</span>
+                </div>
+                <div className="flex items-center justify-between text-base font-medium">
                   <span className="text-q-muted">Бренд</span>
                   <span className="text-q-dark text-right">{product.brandName}</span>
                 </div>
-                {product.category === 'laptop' && (
-                  <div className="flex items-center justify-between text-base font-medium">
-                    <span className="text-q-muted">Диагональ экрана</span>
-                    <span className="text-q-dark text-right">
-                      {product.screenInches ? `${product.screenInches}"` : 'Не указана'}
-                    </span>
-                  </div>
-                )}
                 <div className="flex items-center justify-between text-base font-medium">
-                  <span className="text-q-muted">Процессор</span>
+                  <span className="text-q-muted">Вес</span>
                   <span className="text-q-dark text-right">
-                    {processorToLabel(product.processor) || 'Не указан'}
+                    {product.weightGrams ? `${product.weightGrams} г` : 'Не указан'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-base font-medium">
-                  <span className="text-q-muted">ОЗУ</span>
-                  <span className="text-q-dark text-right">
-                    {product.ramGb ? `${product.ramGb} Гб` : 'Не указано'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-base font-medium">
-                  <span className="text-q-muted">Накопитель</span>
-                  <span className="text-q-dark text-right">
-                    {product.storageGb ? `${product.storageGb} Гб` : 'Не указан'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-base font-medium">
-                  <span className="text-q-muted">Видеокарта</span>
-                  <span className="text-q-dark text-right">
-                    {product.graphicsModel ??
-                      (product.graphicsType === 'discrete' ? 'Дискретная' : 'Встроенная')}
-                  </span>
+                <div className="flex items-start justify-between gap-4 text-base font-medium">
+                  <span className="text-q-muted">Вкусы</span>
+                  <span className="text-q-dark text-right">{product.tastes.join(', ') || 'Не указаны'}</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-5">
                 <div className="flex items-end gap-1 leading-[1.08] font-medium flex-1">
                   <span className="text-q-dark text-[40px]">{product.price.toLocaleString('ru-RU')}</span>
-                  <span className="text-q-muted text-2xl">$</span>
+                  <span className="text-q-muted text-2xl">₽</span>
                 </div>
                 <CartQuantityControl
                   quantity={quantity}
