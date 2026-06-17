@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
+const NEWS_SLIDE_DURATION_MS = 5000;
+
 import { Button } from "@/app/components/Button";
 import { Footer } from "@/app/components/Footer";
 import { Header } from "@/app/components/Header";
@@ -32,6 +34,8 @@ function PanelImage({ src, alt }: { src: string; alt: string }) {
 export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState(0);
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
+  const [activeNewsIndex, setActiveNewsIndex] = useState(0);
+  const [newsSlideProgress, setNewsSlideProgress] = useState(0);
   const [popularProducts, setPopularProducts] = useState<ProductDetail[]>([]);
   const [newsError, setNewsError] = useState("");
   const [productsError, setProductsError] = useState("");
@@ -58,6 +62,48 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    if (newsItems.length === 0) {
+      setActiveNewsIndex(0);
+      setNewsSlideProgress(0);
+      return;
+    }
+
+    if (activeNewsIndex >= newsItems.length) {
+      setActiveNewsIndex(0);
+    }
+  }, [newsItems.length, activeNewsIndex]);
+
+  useEffect(() => {
+    if (newsItems.length <= 1) {
+      setNewsSlideProgress(newsItems.length === 1 ? 1 : 0);
+      return;
+    }
+
+    const startedAt = Date.now();
+    let frameId = 0;
+
+    const tick = () => {
+      const elapsed = Date.now() - startedAt;
+      const progress = Math.min(elapsed / NEWS_SLIDE_DURATION_MS, 1);
+      setNewsSlideProgress(progress);
+
+      if (progress >= 1) {
+        setActiveNewsIndex((current) => (current + 1) % newsItems.length);
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(tick);
+    };
+
+    setNewsSlideProgress(0);
+    frameId = window.requestAnimationFrame(tick);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [newsItems.length, activeNewsIndex]);
+
+  useEffect(() => {
     let cancelled = false;
     const activeTab = POPULAR_TABS[activeCategory];
 
@@ -81,15 +127,15 @@ export default function HomePage() {
     };
   }, [activeCategory]);
 
-  const mainNews = newsItems[0];
-  const sidebarNews = newsItems[1] ?? newsItems[0];
+  const activeNews =
+    newsItems[activeNewsIndex] ?? newsItems[0] ?? null;
   const heroTitle =
-    mainNews?.title ?? "Давайте готовить невероятные напитки вместе!";
+    activeNews?.title ?? "Давайте готовить невероятные напитки вместе!";
   const heroDescription =
-    mainNews?.description ??
+    activeNews?.description ??
     "В SIP Market мы собираем всё для красивых домашних напитков, уютных ритуалов и маленьких поводов для удовольствия.";
-  const heroDate = mainNews?.activeUntil
-    ? formatDate(mainNews.activeUntil)
+  const heroDate = activeNews?.activeUntil
+    ? formatDate(activeNews.activeUntil)
     : "Без срока";
 
   return (
@@ -123,16 +169,36 @@ export default function HomePage() {
                     {heroDescription}
                   </p>
 
-                  <div className="flex items-center gap-4">
-                    <div className="h-1 flex-1 rounded-full bg-white/12">
-                      <div className="h-full w-[72%] rounded-full bg-white" />
+                  {newsItems.length > 0 ? (
+                    <div className="flex h-3 w-full items-center justify-center gap-1">
+                      {newsItems.map((item, index) => {
+                        const isActive = index === activeNewsIndex;
+
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            aria-label={`Показать новость ${index + 1}`}
+                            aria-current={isActive ? "true" : undefined}
+                            onClick={() => setActiveNewsIndex(index)}
+                            className={[
+                              "h-full overflow-hidden rounded-full bg-white/30 transition-[width] duration-300",
+                              isActive ? "w-[60px]" : "w-5",
+                            ].join(" ")}
+                          >
+                            {isActive ? (
+                              <div
+                                className="h-full rounded-full bg-white"
+                                style={{
+                                  width: `${newsSlideProgress * 100}%`,
+                                }}
+                              />
+                            ) : null}
+                          </button>
+                        );
+                      })}
                     </div>
-                    <span className="shrink-0 text-sm font-medium text-white/70">
-                      {newsItems.length > 0
-                        ? `01 / ${String(newsItems.length).padStart(2, "0")}`
-                        : "01 / 01"}
-                    </span>
-                  </div>
+                  ) : null}
 
                   {newsError ? (
                     <p className="text-sm text-white/60">{newsError}</p>
@@ -145,9 +211,7 @@ export default function HomePage() {
               <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_56%)]" />
 
               <div className="relative z-10 text-[32px] font-medium leading-[1.08] text-q-dark sm:text-[48px]">
-                {sidebarNews?.activeUntil
-                  ? formatDate(sidebarNews.activeUntil)
-                  : heroDate}
+                {heroDate}
               </div>
 
               <div className="absolute inset-x-0 bottom-0 z-10 flex justify-center px-8">

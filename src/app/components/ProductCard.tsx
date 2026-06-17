@@ -64,6 +64,34 @@ function averageColorFromImage(imageElement: HTMLImageElement): string {
   }
 }
 
+function toHoverTint(color: string): string {
+  const match = color.match(/rgb\((\d+)\s+(\d+)\s+(\d+)\)/);
+  if (!match) {
+    return "rgba(207, 105, 70, 0.15)";
+  }
+
+  return `rgba(${match[1]}, ${match[2]}, ${match[3]}, 0.15)`;
+}
+
+/** Вставьте сюда SVG-скругление. Форма рассчитана на левую сторону кнопки. */
+function CartTabCornerSvg() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden
+      className="block"
+    >
+      <path
+        d="M3.57628e-07 0C8.83656 0 16 7.16344 16 16V0H3.57628e-07Z"
+        fill="white"
+      />
+    </svg>
+  );
+}
+
 export function ProductCard({
   id,
   name,
@@ -77,7 +105,8 @@ export function ProductCard({
 }: ProductCardProps) {
   const router = useRouter();
   const { user } = useAuth();
-  const { getProductQuantity, addProduct, incrementProduct, decrementProduct } = useCart();
+  const { getProductQuantity, addProduct, incrementProduct, decrementProduct } =
+    useCart();
   const resolvedProductId = typeof id === "number" ? id : Number(id);
   const resolvedQuantity =
     typeof cartQuantity === "number"
@@ -85,11 +114,10 @@ export function ProductCard({
       : Number.isFinite(resolvedProductId)
         ? getProductQuantity(resolvedProductId)
         : 0;
-  const [tintColor, setTintColor] = useState("rgb(245 245 245)");
+  const [hoverTint, setHoverTint] = useState("rgba(207, 105, 70, 0.15)");
 
   useEffect(() => {
     if (!image) {
-      setTintColor("rgb(245 245 245)");
       return;
     }
 
@@ -104,13 +132,7 @@ export function ProductCard({
 
       const dominant = averageColorFromImage(preview);
       if (dominant) {
-        setTintColor(dominant);
-      }
-    };
-
-    preview.onerror = () => {
-      if (!cancelled) {
-        setTintColor("rgb(245 245 245)");
+        setHoverTint(toHoverTint(dominant));
       }
     };
 
@@ -158,60 +180,27 @@ export function ProductCard({
       }
     } catch (requestError) {
       const message =
-        requestError instanceof Error ? requestError.message : "Не удалось обновить корзину";
+        requestError instanceof Error
+          ? requestError.message
+          : "Не удалось обновить корзину";
       window.alert(message);
     }
   };
 
   return (
-    <article
-      className="group relative overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_12px_35px_rgba(31,33,40,0.06)] transition-transform duration-300 hover:-translate-y-1"
-    >
+    <article className="group relative rounded-[40px] border border-q-border bg-white transition-[border-color,background-color] duration-300 hover:border-transparent">
       <div
-        className="pointer-events-none absolute inset-0"
-        style={{ backgroundColor: tintColor, opacity: 0.15 }}
+        className="pointer-events-none absolute inset-0 overflow-hidden rounded-[40px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{ backgroundColor: hoverTint }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.35)_0%,rgba(255,255,255,0.9)_100%)]" />
 
-      <Link
-        href={`/item/${id}`}
-        className="relative flex h-full min-h-[390px] flex-col no-underline"
-      >
-        <div className="relative flex h-[250px] items-center justify-center overflow-hidden px-5 pt-8">
-          {image ? (
-            <img
-              src={image}
-              alt={name}
-              className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex size-full items-center justify-center">
-              <ImageOff size={40} className="text-q-border" />
-            </div>
-          )}
-        </div>
-
-        <div className="relative mt-auto flex items-end justify-between gap-3 p-5 pt-4">
-          <p className="text-q-dark text-[20px] font-medium leading-[1.1]">
-            {name}
-          </p>
-
-          <div className="shrink-0 text-right font-medium leading-[1.08] whitespace-nowrap">
-            <div className="text-q-dark text-[28px]">
-              {price.toLocaleString("ru-RU")}
-            </div>
-            <div className="text-q-muted text-[18px]">$</div>
-          </div>
-        </div>
-      </Link>
-
-      <div className="pointer-events-none absolute inset-x-4 top-4 flex justify-center opacity-0 -translate-y-3 transition-all duration-300 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
+      <div className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
         <button
           type="button"
           disabled={cartDisabled}
-        className={[
-            "pointer-events-auto inline-flex items-center gap-2.5 rounded-full border border-white/80 bg-white px-4 py-2.5 text-sm font-medium text-q-dark shadow-[0_12px_30px_rgba(31,33,40,0.12)] transition-all duration-200 active:scale-95",
-            cartDisabled ? "cursor-not-allowed opacity-60" : "hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(31,33,40,0.14)]",
+          className={[
+            "pointer-events-auto relative inline-flex items-center gap-[10px] bg-white px-6 py-2 text-base font-medium text-q-dark rounded-b-2xl",
+            cartDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
           ].join(" ")}
           onClick={() => handleAction("add")}
           aria-label={
@@ -220,16 +209,57 @@ export function ProductCard({
               : "Добавить в корзину"
           }
         >
+          <span aria-hidden className="pointer-events-none absolute -left-4 top-0 size-4">
+            <CartTabCornerSvg />
+          </span>
+          <span aria-hidden className="pointer-events-none absolute -right-4 top-0 size-4 -scale-x-100">
+            <CartTabCornerSvg />
+          </span>
+
           {resolvedQuantity > 0 ? (
             <span>{`В корзине: ${resolvedQuantity}`}</span>
           ) : (
             <>
-              <ShoppingCart size={16} />
-              <span>Добавить в корзину</span>
+              <span>Добавить</span>
+              <ShoppingCart size={18} strokeWidth={1.5} />
             </>
           )}
         </button>
       </div>
+
+      <Link
+        href={`/item/${id}`}
+        className="relative flex flex-col overflow-hidden rounded-[40px] no-underline"
+      >
+        <div className="relative flex h-[249px] items-center justify-center p-5">
+          {image ? (
+            <img
+              src={image}
+              alt={name}
+              className="max-h-full max-w-full flex-1 object-contain"
+            />
+          ) : (
+            <div className="flex size-full items-center justify-center">
+              <ImageOff size={40} className="text-q-border" />
+            </div>
+          )}
+        </div>
+
+        <div className="relative flex items-start gap-4 px-8 py-6">
+          <p className="flex-1 text-2xl font-medium leading-[1.08] text-q-dark">
+            {name}
+          </p>
+
+          <div className="flex shrink-0 items-end gap-1">
+            <span className="text-lg font-medium leading-[1.08] text-q-muted">
+              $
+            </span>
+            <span className="text-lg font-medium leading-[1.08] text-q-dark">
+              {price.toLocaleString("ru-RU")}
+            </span>
+          </div>
+        </div>
+      </Link>
     </article>
   );
 }
