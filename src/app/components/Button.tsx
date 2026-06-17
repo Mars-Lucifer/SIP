@@ -3,6 +3,7 @@ import React from "react";
 type ButtonVariant =
   | "dark"
   | "accent"
+  | "fillGray"
   | "outline"
   | "outlineMuted"
   | "danger"
@@ -20,8 +21,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  dark: "bg-q-dark text-white hover:bg-q-accent hover:text-q-dark",
-  accent: "bg-q-accent text-q-dark hover:bg-q-dark hover:text-q-accent",
+  dark: "bg-q-dark text-white hover:bg-q-dark-soft",
+  accent: "bg-q-accent text-white hover:bg-q-accent-soft",
+  fillGray: "bg-q-fill-gray text-white hover:bg-q-fill-gray-soft",
   outline: "border border-q-dark text-q-dark bg-transparent hover:bg-q-surface",
   outlineMuted:
     "border border-q-border text-q-dark bg-white hover:bg-q-surface hover:border-q-border",

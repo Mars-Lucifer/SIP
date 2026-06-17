@@ -5,8 +5,8 @@ import { AuthProvider } from "@/app/auth-provider";
 import { CartProvider } from "@/app/cart-provider";
 
 export const metadata: Metadata = {
-  title: "TechMarket",
-  description: "TechMarket storefront",
+  title: "SIP Market",
+  description: "SIP Market storefront",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

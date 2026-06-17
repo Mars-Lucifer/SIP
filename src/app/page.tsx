@@ -94,7 +94,7 @@ export default function HomePage() {
   const secondaryNews = newsItems.slice(1, 3);
 
   return (
-    <div className="min-h-screen bg-white font-[Inter,sans-serif]">
+    <div className="min-h-screen bg-white font-[Manrope,sans-serif]">
       <Header />
 
       <main className="px-4 sm:px-6 xl:px-[60px] max-w-[1440px] mx-auto">

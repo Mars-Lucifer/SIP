@@ -2,8 +2,10 @@
   --q-dark: #1f2128;
   --q-dark-soft: #2d3140;
   --q-dark-subtle: #383c4d;
-  --q-accent: #d6ff33;
-  --q-accent-soft: #c8f020;
+  --q-accent: #9216ff;
+  --q-accent-soft: #7d12dd;
+  --q-fill-gray: #7e8395;
+  --q-fill-gray-soft: #686e7f;
   --q-muted: #7e8395;
   --q-surface: #f5f5f5;
   --q-surface-soft: #ebebeb;
@@ -14,5 +16,5 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
 }

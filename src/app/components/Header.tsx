@@ -49,6 +49,7 @@ export function Header({
   ) => {
     const isBasket = link.href === "/basket";
     const showBadge = isBasket && itemCount > 0;
+    const isActive = pathname === link.href;
 
     return (
       <Link
@@ -60,13 +61,13 @@ export function Header({
           }
         }}
         className={[
+          "inline-flex items-center gap-2 rounded-full no-underline transition-colors duration-150",
           mobile
-            ? "text-base font-medium py-2 no-underline transition-colors duration-150"
-            : "text-base font-medium leading-normal transition-colors duration-150 no-underline whitespace-nowrap",
-          pathname === link.href
-            ? "text-q-dark"
-            : "text-q-muted hover:text-q-dark",
-          isBasket ? "inline-flex items-center gap-2" : "",
+            ? "w-full justify-between px-5 py-3 text-base font-medium"
+            : "px-[18px] py-3 text-base font-medium whitespace-nowrap",
+          isActive
+            ? "bg-q-surface text-q-dark"
+            : "text-q-dark hover:bg-q-surface/80",
         ].join(" ")}
       >
         <span>{link.label}</span>
@@ -80,108 +81,136 @@ export function Header({
   };
 
   return (
-    <header className="sticky z-50 isolate top-0 w-full px-4 sm:px-6 xl:px-[60px] py-4 sm:py-5">
-      <div className="absolute pointer-events-none z-[-10] h-full sm:h-1/2 top-0 left-4 right-4 sm:left-6 sm:right-6 xl:left-[60px] xl:right-[60px] bg-white" />
-      <div className="bg-q-surface rounded-q-input px-4 sm:px-5 py-3.5 flex items-center gap-4 sm:gap-6 xl:gap-10 max-w-[1320px] mx-auto">
-        <Link
-          href="/"
-          className="flex items-center gap-3.5 shrink-0 group no-underline"
-        >
-          <div className="size-8 shrink-0">
-            <img
-              src="/assets/icons/logo.svg"
-              alt="logo"
-              className="w-full h-full"
+    <header className="sticky top-0 z-50 isolate w-full px-4 sm:px-6 xl:px-[60px] pt-4 sm:pt-5">
+      <div className="max-w-[1320px] mx-auto rounded-full border border-white/70 bg-white/60 px-4 sm:px-5 lg:px-6 py-3.5 backdrop-blur-md shadow-[0_18px_50px_rgba(31,33,40,0.08)]">
+        <div className="flex items-center gap-4 sm:gap-5 xl:gap-10">
+          <Link
+            href="/"
+            className="flex items-center gap-3 shrink-0 no-underline group"
+          >
+            <div className="size-8 shrink-0 overflow-hidden rounded-[10px]">
+              <img
+                src="/assets/icons/logo.svg"
+                alt="logo"
+                className="w-full h-full"
+              />
+            </div>
+            <span className="text-q-dark text-2xl font-medium leading-none whitespace-nowrap transition-opacity group-hover:opacity-80">
+              SIP Market
+            </span>
+          </Link>
+
+          <div className="hidden md:flex flex-1 min-w-0 max-w-[520px]">
+            <InputSearch
+              placeholder="Поиск"
+              tone="white"
+              radius="input"
+              border="muted"
+              className="h-[52px]"
             />
           </div>
-          <span className="text-q-dark font-medium text-2xl leading-normal whitespace-nowrap transition-opacity group-hover:opacity-75">
-            TechMarket
-          </span>
-        </Link>
 
-        <div className="hidden sm:flex flex-1 min-w-0">
-          {/* <InputSearch placeholder="Поиск" tone="white" /> */}
-        </div>
+          <nav className="hidden lg:flex items-center gap-1 shrink-0">
+            {navLinks.map((link) => renderNavLink(link))}
 
-        <nav className="hidden md:flex items-center gap-6 xl:gap-10 shrink-0">
-          {navLinks.map((link) => renderNavLink(link))}
-
-          {resolvedIsLoggedIn ? (
-            <div className="flex items-center gap-2">
-              <Link href="/orders" className="no-underline">
-                <button className="bg-q-dark text-white rounded-q-pill px-[18px] py-3 text-base font-medium flex items-center gap-2.5 hover:bg-q-dark-soft transition-colors duration-150 whitespace-nowrap cursor-pointer">
+            {resolvedIsLoggedIn ? (
+              <div className="flex items-center gap-2 pl-2">
+                <Button
+                  as="a"
+                  href="/orders"
+                  variant="dark"
+                  size="md"
+                  icon={<User size={18} />}
+                >
                   {resolvedUserName}
-                  <User size={18} />
-                </button>
-              </Link>
-              <Button variant="outlineMuted" size="md" onClick={handleLogout}>
-                Выйти
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Link href="/auth">
-                <Button variant="dark" size="md">
+                </Button>
+                <Button variant="fillGray" size="md" onClick={handleLogout}>
+                  Выйти
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 pl-2">
+                <Button as="a" href="/auth" variant="dark" size="md">
                   Войти
                 </Button>
-              </Link>
-              <Link href="/auth?tab=register">
-                <Button variant="accent" size="md">
+                <Button
+                  as="a"
+                  href="/auth?tab=register"
+                  variant="accent"
+                  size="md"
+                >
                   Зарегистрироваться
                 </Button>
-              </Link>
-            </div>
-          )}
-        </nav>
+              </div>
+            )}
+          </nav>
 
-        <button
-          className="md:hidden ml-auto text-q-dark p-1 transition-transform duration-150 active:scale-95"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Меню"
-        >
-          {menuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+          <button
+            className="lg:hidden ml-auto text-q-dark p-1 transition-transform duration-150 active:scale-95"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Меню"
+          >
+            {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
-
-      {/* <div className="sm:hidden mt-2 px-0">
-        <InputSearch placeholder="Поиск" tone="white" border="strong" />
-      </div> */}
 
       <div
         className={[
-          "md:hidden overflow-hidden transition-all duration-300 ease-in-out max-w-[1320px] mx-auto",
-          menuOpen ? "max-h-96 opacity-100 mt-2" : "max-h-0 opacity-0",
+          "lg:hidden overflow-hidden transition-all duration-300 ease-in-out max-w-[1320px] mx-auto",
+          menuOpen ? "max-h-[32rem] opacity-100 mt-3" : "max-h-0 opacity-0",
         ].join(" ")}
       >
-        <div className="bg-q-surface rounded-q-input p-4 flex flex-col gap-3">
-          {navLinks.map((link) => renderNavLink(link, true))}
-          <div className="flex flex-col gap-2 pt-2 border-t border-q-border">
+        <div className="rounded-[28px] border border-white/70 bg-white/70 backdrop-blur-md p-4 shadow-[0_18px_50px_rgba(31,33,40,0.08)]">
+          <div className="flex flex-col gap-2">
+            <div className="md:hidden pb-2">
+              <InputSearch
+                placeholder="Поиск"
+                tone="white"
+                radius="input"
+                border="muted"
+              />
+            </div>
+            {navLinks.map((link) => renderNavLink(link, true))}
+          </div>
+
+          <div className="flex flex-col gap-2 pt-4 mt-4 border-t border-q-border">
             {resolvedIsLoggedIn ? (
               <>
-                <Link href="/orders" onClick={() => setMenuOpen(false)}>
-                  <Button variant="dark" fullWidth>
-                    {resolvedUserName} <User size={18} />
-                  </Button>
-                </Link>
-                <Button variant="outlineMuted" fullWidth onClick={handleLogout}>
+                <Button
+                  as="a"
+                  href="/orders"
+                  variant="dark"
+                  fullWidth
+                  icon={<User size={18} />}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {resolvedUserName}
+                </Button>
+                <Button variant="fillGray" fullWidth onClick={handleLogout}>
                   Выйти
                 </Button>
               </>
             ) : (
               <>
-                <Link href="/auth" onClick={() => setMenuOpen(false)}>
-                  <Button variant="dark" fullWidth>
-                    Войти
-                  </Button>
-                </Link>
-                <Link
-                  href="/auth?tab=register"
+                <Button
+                  as="a"
+                  href="/auth"
+                  variant="dark"
+                  fullWidth
                   onClick={() => setMenuOpen(false)}
                 >
-                  <Button variant="accent" fullWidth>
-                    Зарегистрироваться
-                  </Button>
-                </Link>
+                  Войти
+                </Button>
+                <Button
+                  as="a"
+                  href="/auth?tab=register"
+                  variant="accent"
+                  fullWidth
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Зарегистрироваться
+                </Button>
               </>
             )}
           </div>

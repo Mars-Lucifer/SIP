@@ -55,7 +55,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-[Inter,sans-serif] flex flex-col">
+    <div className="min-h-screen bg-white font-[Manrope,sans-serif] flex flex-col">
       <Header />
 
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-10 sm:py-16">
