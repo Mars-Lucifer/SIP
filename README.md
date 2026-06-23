@@ -1,4 +1,4 @@
-# qualor-shp
+# sip-market
 
 Next.js + Tailwind CSS storefront prototype.
 
